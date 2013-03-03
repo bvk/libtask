@@ -23,6 +23,7 @@ AC_CHECK_TOOLS(HOSTCC, [gcc], [:])
 AC_CHECK_TARGET_TOOLS(TARGETCC, [gcc], [:])
 
 AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([src/Makefile])
 
 AC_OUTPUT
 [
