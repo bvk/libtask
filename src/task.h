@@ -8,6 +8,7 @@
 #include <stdint.h>
 
 #include "list.h"
+#include "refcount.h"
 
 // Task
 //
@@ -32,6 +33,9 @@
 // io thread has finished the "read" operation asynchronously.
 
 typedef struct libtask_task {
+  // Number of references to the task.
+  libtask_refcount_t refcount;
+
   // Memory for saving and restoring stack contexts. The uct_self
   // member contains the latest context of the task and the uct_thread
   // contains the context of the current thread that is executing this
@@ -70,15 +74,15 @@ typedef struct libtask_task {
   bool complete;
 } libtask_task_t;
 
-// Initialize a task!
+// Initialize a task variable (on stack).
 //
-// task: Task variable to be initialized.
+// task: Task to initialize.
 //
-// function: Address of the function that defines the task.
+// function: Address of the function that the task executes.
 //
 // argument: Argument for the function when the task is executed.
 //
-// stack_size: Stack size required for the task in bytes.
+// stack_size: Size of the stack (in bytes) to use for executing the task.
 //
 // Returns 0 on success and ENOMEM on out of memory.
 error_t
@@ -92,26 +96,68 @@ libtask_task_initialize(libtask_task_t *task,
 // destroyed only when it has finished execution or is not part of any
 // task-pool.
 //
-// task: Task to be destroyed.
+// task: Task to be destroy.
 //
-// Returns 0 on success. Returns EINVAL if task is part of any task-pool and
-// EPERM if task is trying to destroy itself.
+// Returns 0 on success. Returns EINVAL if task is part of any task-pool or
+// task is trying to destroy itself.
 error_t
 libtask_task_finalize(libtask_task_t *task);
+
+// Create a task on heap.
+//
+// taskp: Address of task pointer where new task has to be returned.
+//
+// Returns zero on success and ENOMEM on failure.
+error_t
+libtask_task_create(libtask_task_t **taskp);
+
+// Take a reference.
+//
+// task: Task whose reference count is incremented.
+//
+// Returns the input task.
+static inline libtask_task_t *
+libtask_task_ref(libtask_task_t *task) {
+  libtask_refcount_inc(&task->refcount);
+  return task;
+}
+
+// Release a task reference and destroy it if necessary.
+//
+// task: Task to unreference and destroy.
+//
+// Returns the number of references left.
+static inline int32_t
+libtask_task_unref(libtask_task_t *task) {
+  int32_t nref;
+  libtask_refcount_dec(&task->refcount, libtask_task_finalize, task, &nref);
+  return nref;
+}
 
 // Execute a task!  Note that a task that is not part of any task-pool
 // can also be executed, but it may return early, for example, on a
 // libtask_task_yield.
 //
-// task: Task to be executed.
+// task: The task to execute.
 //
 // Returns zero.
 error_t
 libtask_task_execute(libtask_task_t *task);
 
+// Schedule a task back into its task-pool.  If task has no task-pool
+// this acts like a no-op.
+//
+// task: Task to reschedule.
+//
+// Returns zero.
+error_t
+libtask_task_schedule(libtask_task_t *task);
+
 // Pause the current task!  When a task is paused, control resumes
 // from the location task is executed (which would be a
-// libtask_task_execute function call.)
+// libtask_task_execute function call.)  If task doesn't belong to any
+// task-pool, then it is stopped until another libtask_task_execute is
+// performed.
 //
 // Returns 0 on success. Returns EINVAL when called from a non-task
 // context.

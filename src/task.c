@@ -77,12 +77,14 @@ libtask_task_initialize(libtask_task_t *task,
   CHECK(pthread_spin_lock(&all_task_lock) == 0);
   libtask_list_push_back(&all_task_list, &task->all_task_link);
   CHECK(pthread_spin_unlock(&all_task_lock) == 0);
+  libtask_refcount_initialize(&task->refcount);
   return 0;
 }
 
 error_t
 libtask_task_finalize(libtask_task_t *task)
 {
+  CHECK(libtask_refcount_count(&task->refcount) <= 1);
   CHECK(task->task_pool == NULL);
   CHECK(libtask_list_empty(&task->waiting_link));
 
@@ -100,27 +102,65 @@ libtask_task_finalize(libtask_task_t *task)
   return 0;
 }
 
+// Resume a task.
+static inline void
+libtask_task_resume()
+{
+  libtask_task_t *task = libtask_current_task;
+  CHECK(swapcontext(&task->uct_thread, &task->uct_self) == 0);
+}
+
+// Pause a task.
+static inline void
+libtask_task_pause()
+{
+  libtask_task_t *task = libtask_current_task;
+  CHECK(swapcontext(&task->uct_self, &task->uct_thread) == 0);
+}
+
 static void *
 libtask_task_main(libtask_task_t *task)
 {
   task->complete = false;
   task->result = task->function(task->argument);
   task->complete = true;
-  // Force a reschdule by yield.
-  libtask_task_yield();
+
+  if (task->task_pool) {
+    libtask_task_pool_erase(task->task_pool, task);
+  }
+
+  libtask_task_pause();
   return task;
 }
 
 error_t
 libtask_task_execute(libtask_task_t *task)
 {
+  // Take a reference to the task so that it cannot be destroyed when
+  // it is running.
+  libtask_task_ref(task);
+
+  // Lock the task's stack.
   CHECK(pthread_mutex_lock(&task->mutex) == 0);
 
   libtask_current_task = task;
-  CHECK(swapcontext(&task->uct_thread, &task->uct_self) == 0);
+  libtask_task_resume();
   libtask_current_task = NULL;
 
   CHECK(pthread_mutex_unlock(&task->mutex) == 0);
+  libtask_task_unref(task);
+  return 0;
+}
+
+error_t
+libtask_task_schedule(libtask_task_t *task)
+{
+  if (task->complete) {
+    return EINVAL;
+  }
+  if (task->task_pool) {
+    return libtask_task_pool_push_back(task->task_pool, task);
+  }
   return 0;
 }
 
@@ -133,13 +173,15 @@ libtask_task_yield()
   }
 
   if (task->complete) {
-    if (task->task_pool) {
-      libtask_task_pool_erase(task->task_pool, task);
-    }
-  } else {
-    if (task->task_pool) {
-      libtask_task_pool_push_back(task->task_pool, task);
-    }
+    return EINVAL;
   }
-  return (swapcontext(&task->uct_self, &task->uct_thread) == -1) ? errno : 0;
+
+  if (task->task_pool == NULL) {
+    libtask_task_pause();
+    return 0;
+  }
+
+  CHECK(libtask_task_schedule(task) == 0);
+  libtask_task_pause();
+  return 0;
 }

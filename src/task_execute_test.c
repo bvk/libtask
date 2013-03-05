@@ -19,7 +19,6 @@ work(void *arg_)
 
     CHECK(libtask_task_yield() == 0);
   }
-  printf ("done\n");
   return 0;
 }
 
@@ -34,5 +33,6 @@ main(int argc, char *argv[])
     libtask_task_execute(&task);
   }
   CHECK(counter == NYIELD);
+  CHECK(libtask_task_finalize(&task) == 0);
   return 0;
 }

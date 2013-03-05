@@ -76,7 +76,7 @@ libtask_task_pool_ref(libtask_task_pool_t *task_pool) {
 // Release a task-pool reference and destroy it if necessary.  If a
 // task-pool contains any tasks, they will be orphaned on a destroy.
 //
-// task_pool: Task-pool to destroy.
+// task_pool: Task-pool to unreference.
 //
 // Returns the number of references left.
 static inline int32_t
