@@ -109,7 +109,10 @@ libtask_task_finalize(libtask_task_t *task);
 //
 // Returns zero on success and ENOMEM on failure.
 error_t
-libtask_task_create(libtask_task_t **taskp);
+libtask_task_create(libtask_task_t **taskp,
+		    int (*function)(void *),
+		    void *argument,
+		    int32_t stack_size);
 
 // Take a reference.
 //
@@ -153,8 +156,15 @@ libtask_task_execute(libtask_task_t *task);
 error_t
 libtask_task_schedule(libtask_task_t *task);
 
-// Pause the current task!  When a task is paused, control resumes
-// from the location task is executed (which would be a
+// Pause the current task!
+//
+// Returns zero on success or EINVAL when called from a non-task
+// context.
+error_t
+libtask_task_suspend(void);
+
+// Pause and reschdule current task!  When a task is paused, control
+// resumes from the location task is executed (which would be a
 // libtask_task_execute function call.)  If task doesn't belong to any
 // task-pool, then it is stopped until another libtask_task_execute is
 // performed.

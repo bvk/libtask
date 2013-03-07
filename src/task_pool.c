@@ -101,6 +101,7 @@ libtask_task_pool_insert(libtask_task_pool_t *pool, libtask_task_t *task)
   pool->ntasks++;
   task->task_pool = libtask_task_pool_ref(pool);
   libtask_list_push_back(&pool->waiting_list, &task->waiting_link);
+  libtask_task_ref(task);
 
   CHECK(pthread_spin_unlock(&pool->spinlock) == 0);
   return 0;
@@ -116,15 +117,11 @@ libtask_task_pool_erase(libtask_task_pool_t *pool, libtask_task_t *task)
   CHECK(pthread_spin_lock(&pool->spinlock) == 0);
 
   pool->ntasks--;
-  CHECK(pool->ntasks >= 0);
-
   task->task_pool = NULL;
   if (!libtask_list_empty(&task->waiting_link)) {
     libtask_list_erase(&task->waiting_link);
   }
-  if (pool->ntasks == 0) {
-    CHECK(libtask_list_empty(&task->waiting_link));
-  }
+  libtask_task_unref(task);
 
   CHECK(pthread_spin_unlock(&pool->spinlock) == 0);
   libtask_task_pool_unref(pool);

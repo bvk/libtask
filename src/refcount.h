@@ -48,7 +48,7 @@ typedef struct {
       break;						\
     }							\
     dtor((obj));					\
-    if (count == 0) {					\
+    if (count == 1) {					\
       free((x));					\
     }							\
   } while (0)

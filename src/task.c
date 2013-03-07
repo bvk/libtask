@@ -99,43 +99,73 @@ libtask_task_finalize(libtask_task_t *task)
 
   CHECK(pthread_mutex_destroy(&task->mutex) == 0);
   free(task->stack);
+  task->stack = NULL;
   return 0;
 }
 
-// Resume a task.
-static inline void
-libtask_task_resume()
+error_t
+libtask_task_create(libtask_task_t **taskp,
+		    int (*function)(void *),
+		    void *argument,
+		    int32_t stack_size)
 {
-  libtask_task_t *task = libtask_current_task;
-  CHECK(swapcontext(&task->uct_thread, &task->uct_self) == 0);
+  libtask_task_t *task = (libtask_task_t *)malloc(sizeof(libtask_task_t));
+  if (!task) {
+    return ENOMEM;
+  }
+
+  error_t error = libtask_task_initialize(task, function, argument,
+					  stack_size);
+  if (error != 0) {
+    free(task);
+    return error;
+  }
+
+  libtask_refcount_create(&task->refcount);
+  *taskp = task;
+  return 0;
 }
 
-// Pause a task.
-static inline void
-libtask_task_pause()
+error_t
+libtask_task_suspend()
 {
   libtask_task_t *task = libtask_current_task;
-  CHECK(swapcontext(&task->uct_self, &task->uct_thread) == 0);
+  if (!task) {
+    return EINVAL;
+  }
+  return swapcontext(&task->uct_self, &task->uct_thread) == -1 ? errno : 0;
 }
 
 static void *
 libtask_task_main(libtask_task_t *task)
 {
+  assert(libtask_current_task == task);
   task->complete = false;
   task->result = task->function(task->argument);
   task->complete = true;
+  assert(libtask_current_task == task);
 
   if (task->task_pool) {
     libtask_task_pool_erase(task->task_pool, task);
   }
 
-  libtask_task_pause();
-  return task;
+  assert(task->task_pool == NULL);
+  assert(libtask_list_empty(&task->waiting_link));
+
+  CHECK(libtask_task_suspend() == 0);
+
+  // No task should ever reach here!
+  CHECK(0);
+  return NULL;
 }
 
 error_t
 libtask_task_execute(libtask_task_t *task)
 {
+  if (task->complete) {
+    return EINVAL;
+  }
+
   // Take a reference to the task so that it cannot be destroyed when
   // it is running.
   libtask_task_ref(task);
@@ -144,7 +174,7 @@ libtask_task_execute(libtask_task_t *task)
   CHECK(pthread_mutex_lock(&task->mutex) == 0);
 
   libtask_current_task = task;
-  libtask_task_resume();
+  CHECK(swapcontext(&task->uct_thread, &task->uct_self) == 0);
   libtask_current_task = NULL;
 
   CHECK(pthread_mutex_unlock(&task->mutex) == 0);
@@ -177,11 +207,11 @@ libtask_task_yield()
   }
 
   if (task->task_pool == NULL) {
-    libtask_task_pause();
+    libtask_task_suspend();
     return 0;
   }
 
   CHECK(libtask_task_schedule(task) == 0);
-  libtask_task_pause();
+  libtask_task_suspend();
   return 0;
 }
