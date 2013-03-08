@@ -1,5 +1,5 @@
-#ifndef _LIBTASK_SRC_TASK_H_
-#define _LIBTASK_SRC_TASK_H_
+#ifndef _LIBTASK_TASK_H_
+#define _LIBTASK_TASK_H_
 
 #include <ucontext.h>
 #include <errno.h>
@@ -7,8 +7,8 @@
 #include <pthread.h>
 #include <stdint.h>
 
-#include "list.h"
-#include "refcount.h"
+#include "libtask/list.h"
+#include "libtask/refcount.h"
 
 // Task
 //
@@ -187,4 +187,4 @@ void libtask_print_all_tasks(void);
 // Returns total number of tasks alive.
 int32_t libtask_count_all_tasks(void);
 
-#endif // _LIBTASK_SRC_TASK_H_
+#endif // _LIBTASK_TASK_H_

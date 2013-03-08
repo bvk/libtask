@@ -1,7 +1,7 @@
-#ifndef _LIBTASK_SRC_REFCOUNT_H_
-#define _LIBTASK_SRC_REFCOUNT_H_
+#ifndef _LIBTASK_REFCOUNT_H_
+#define _LIBTASK_REFCOUNT_H_
 
-#include "atomic.h"
+#include "libtask/atomic.h"
 
 // Reference Counting
 //
@@ -53,4 +53,4 @@ typedef struct {
     }							\
   } while (0)
 
-#endif // _LIBTASK_SRC_REFCOUNT_H_
+#endif // _LIBTASK_REFCOUNT_H_

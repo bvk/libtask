@@ -1,5 +1,5 @@
-#ifndef _LIBTASK_INCLUDE_LIBTASK_LIST_H_
-#define _LIBTASK_INCLUDE_LIBTASK_LIST_H_
+#ifndef _LIBTASK_LIST_H_
+#define _LIBTASK_LIST_H_
 
 #include <assert.h>
 #include <stdbool.h>
@@ -224,4 +224,4 @@ libtask_list_print(libtask_list_t *head)
   } while ((it = it->next) != head);
 }
 
-#endif // _LIBTASK_INCLUDE_LIBTASK_LIST_H_
+#endif // _LIBTASK_LIST_H_

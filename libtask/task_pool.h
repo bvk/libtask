@@ -1,13 +1,13 @@
-#ifndef _LIBTASK_SRC_TASK_POOL_H_
-#define _LIBTASK_SRC_TASK_POOL_H_
+#ifndef _LIBTASK_TASK_POOL_H_
+#define _LIBTASK_TASK_POOL_H_
 
 #include <errno.h>
 #include <pthread.h>
 #include <stdint.h>
 
-#include "list.h"
-#include "refcount.h"
-#include "task.h"
+#include "libtask/list.h"
+#include "libtask/refcount.h"
+#include "libtask/task.h"
 
 // Task Pool
 //
@@ -153,4 +153,4 @@ error_t
 libtask_task_pool_switch(libtask_task_pool_t *task_pool,
 			 libtask_task_pool_t **old_poolp);
 
-#endif // _LIBTASK_SRC_TASK_POOL_H_
+#endif // _LIBTASK_TASK_POOL_H_

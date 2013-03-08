@@ -5,7 +5,7 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
-#include "task_pool.h"
+#include "libtask/task_pool.h"
 
 #define CHECK(x) do { if (!(x)) { assert(0); } } while (0)
 
