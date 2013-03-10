@@ -8,31 +8,8 @@
 // A thread local variable that keeps track of currently executing task.
 static libtask_task_t __thread *libtask_current_task = NULL;
 
-// Global list of all threads.
-static pthread_spinlock_t all_task_lock;
-static pthread_once_t all_task_list_once = PTHREAD_ONCE_INIT;
-static libtask_list_t all_task_list;
-
 // Forward declarations.
 static void *libtask_task_main(libtask_task_t *task);
-
-static void
-initialize_all_task_list()
-{
-  pthread_spin_init(&all_task_lock, PTHREAD_PROCESS_PRIVATE);
-  libtask_list_initialize(&all_task_list);
-}
-
-void
-libtask_print_all_tasks(void)
-{
-  CHECK(pthread_spin_lock(&all_task_lock) == 0);
-
-  // TODO: Print each task and the function call-trace in that.
-  // libtask_list_apply(&all_task_list, NULL);
-
-  CHECK(pthread_spin_unlock(&all_task_lock) == 0);
-}
 
 libtask_task_t *
 libtask_get_task_current(void)
@@ -46,8 +23,6 @@ libtask_task_initialize(libtask_task_t *task,
 			void *argument,
 			int32_t stack_size)
 {
-  CHECK(pthread_once(&all_task_list_once, initialize_all_task_list) == 0);
-
   char *stack = (char *)malloc(stack_size);
   if (!stack) {
     return ENOMEM;
@@ -73,10 +48,6 @@ libtask_task_initialize(libtask_task_t *task,
 
   makecontext(&task->uct_self, (void(*)())libtask_task_main, 1, task);
 
-  libtask_list_initialize(&task->all_task_link);
-  CHECK(pthread_spin_lock(&all_task_lock) == 0);
-  libtask_list_push_back(&all_task_list, &task->all_task_link);
-  CHECK(pthread_spin_unlock(&all_task_lock) == 0);
   libtask_refcount_initialize(&task->refcount);
   return 0;
 }
@@ -91,11 +62,6 @@ libtask_task_finalize(libtask_task_t *task)
   if (libtask_current_task == task) {
     return EINVAL;
   }
-
-  // Remove the task from all task list.
-  CHECK(pthread_spin_lock(&all_task_lock) == 0);
-  libtask_list_erase(&task->all_task_link);
-  CHECK(pthread_spin_unlock(&all_task_lock) == 0);
 
   CHECK(pthread_mutex_destroy(&task->mutex) == 0);
   free(task->stack);

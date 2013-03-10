@@ -66,10 +66,6 @@ typedef struct libtask_task {
   void *argument;
   int (*function)(void *);
 
-  // All tasks are members of a global task list.  It is intended to
-  // be used from gdb to inspect tasks and their stacks.
-  libtask_list_t all_task_link;
-
   // Flags indicating the task state.
   bool complete;
 } libtask_task_t;
