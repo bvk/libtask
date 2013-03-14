@@ -44,16 +44,6 @@ typedef struct libtask_task {
   ucontext_t uct_self;
   ucontext_t uct_thread;
 
-  // Mutex to ensure no two threads operate on the same stack at once.
-  pthread_mutex_t mutex;
-
-  // Normally, runnable tasks wait in the task-pools and one or more
-  // threads pick up tasks from the task-pools for execution. Below
-  // two members contain the current task-pool where task is currently
-  // waiting.
-  libtask_list_t waiting_link;
-  struct libtask_task_pool *task_pool;
-
   // Every task is created with its own stack. These two members refer
   // to the stack location and the size. Note that different tasks can
   // have different stack sizes.
@@ -68,6 +58,17 @@ typedef struct libtask_task {
 
   // Flags indicating the task state.
   bool complete;
+
+  // Mutex to ensure no two threads operate on the same stack at once.
+  pthread_mutex_t mutex;
+
+  // Normally, runnable tasks wait in the task-pools and one or more
+  // threads pick up tasks from the task-pools for execution. Below
+  // two members contain the current task-pool where task is currently
+  // waiting.
+  libtask_list_t waiting_link;
+  struct libtask_task_pool *task_pool;
+
 } libtask_task_t;
 
 // Initialize a task variable (on stack).
