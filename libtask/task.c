@@ -58,8 +58,6 @@ libtask_task_initialize(libtask_task_t *task,
   CHECK(pthread_mutex_init(&task->mutex, NULL) == 0);
 
   task->complete = false;
-  task->owner = NULL;
-  libtask_list_initialize(&task->waiting_link);
 
   // Initialize the task with user function.
   task->result = 0;
@@ -74,6 +72,10 @@ libtask_task_initialize(libtask_task_t *task,
   void *libtask__task_main(libtask_task_t *task);
   makecontext(&task->uct_self, (void(*)())libtask__task_main, 1, task);
 
+  task->owner = NULL;
+  libtask_list_initialize(&task->waiting_link);
+  libtask_list_initialize(&task->originating_pool_link);
+
   libtask_refcount_initialize(&task->refcount);
   return 0;
 }
@@ -81,13 +83,12 @@ libtask_task_initialize(libtask_task_t *task,
 error_t
 libtask_task_finalize(libtask_task_t *task)
 {
-  CHECK(libtask_refcount_count(&task->refcount) <= 1);
+  assert(libtask_get_task_current() != task);
+  assert(libtask_refcount_count(&task->refcount) <= 1);
+
   CHECK(task->owner == NULL);
   CHECK(libtask_list_empty(&task->waiting_link));
-
-  if (libtask_get_task_current() == task) {
-    return EINVAL;
-  }
+  CHECK(libtask_list_empty(&task->originating_pool_link));
 
   CHECK(pthread_mutex_destroy(&task->mutex) == 0);
   free(task->stack);

@@ -7,6 +7,23 @@
 
 * DONE
 
+- Make tasks belong to a task-pool for entire life-time.
+
+  We expect tasks to be created for performing long running
+  actions/requests involving multiple cpu and io operations and their
+  priorities, etc. to be defined at the task-pool level. So, it is
+  important to have the ability to inspect all tasks of a subsystem
+  through its task-pool for debugging, reporting and analysis.
+
+  Note that depending on the steps involved in completing, a task may
+  migrate between different task-pools waiting for execution. Such
+  tasks are still part of its originating task-pool even though they
+  currently may be executed in a different task-pool context.
+
+  The "task_list" in the task-pool and the "originating_pool_link" in
+  task are used to maintain this relation between the tasks and the
+  task-pools.
+
 - Add a private interface to get the current task pool.
 
   Since tasks are always tied to a task-pool, if a _current_ task

@@ -73,6 +73,12 @@ typedef struct libtask_task {
   // execution.
   struct libtask_task_pool *owner;
 
+  // Even though a task migrates between different task-pools during
+  // its life time, it is still associated with an originating
+  // task-pool for its entire life time. This task-pool is where tasks
+  // can be inspected and analyzed for reporting or debugging.
+  libtask_list_t originating_pool_link;
+
 } libtask_task_t;
 
 // Initialize a task variable (on stack).

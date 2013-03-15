@@ -9,9 +9,11 @@ error_t
 libtask_task_pool_initialize(libtask_task_pool_t *pool)
 {
   pool->ntasks = 0;
-  libtask_refcount_initialize(&pool->refcount);
+  libtask_list_initialize(&pool->task_list);
   libtask_list_initialize(&pool->waiting_list);
   CHECK(pthread_spin_init(&pool->spinlock, PTHREAD_PROCESS_PRIVATE) == 0);
+
+  libtask_refcount_initialize(&pool->refcount);
   return 0;
 }
 
@@ -98,10 +100,12 @@ libtask_task_pool_insert(libtask_task_pool_t *pool, libtask_task_t *task)
   CHECK(task->owner == NULL);
   CHECK(pthread_spin_lock(&pool->spinlock) == 0);
 
-  pool->ntasks++;
   task->owner = libtask_task_pool_ref(pool);
   libtask_list_push_back(&pool->waiting_list, &task->waiting_link);
+
+  pool->ntasks++;
   libtask_task_ref(task);
+  libtask_list_push_back(&pool->task_list, &task->originating_pool_link);
 
   CHECK(pthread_spin_unlock(&pool->spinlock) == 0);
   return 0;
@@ -120,6 +124,9 @@ libtask_task_pool_erase(libtask_task_pool_t *pool, libtask_task_t *task)
   task->owner = NULL;
   if (!libtask_list_empty(&task->waiting_link)) {
     libtask_list_erase(&task->waiting_link);
+  }
+  if (!libtask_list_empty(&task->originating_pool_link)) {
+    libtask_list_erase(&task->originating_pool_link);
   }
   libtask_task_unref(task);
 

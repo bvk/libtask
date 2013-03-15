@@ -34,7 +34,13 @@ typedef struct libtask_task_pool {
   // taken for addition and removal of a task is very small, a
   // spinlock is more appropriate.
   pthread_spinlock_t spinlock;
+
+  // Lists of tasks that belong to this task-pool for inspection,
+  // analysis and debugging purposes. Tasks are linked into this list
+  // through their originating_pool_link.
+  libtask_list_t task_list;
   int32_t ntasks;
+
   libtask_list_t waiting_list;
 } libtask_task_pool_t;
 
