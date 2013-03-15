@@ -41,18 +41,12 @@ void *
 tmain(void *arg_)
 {
   do {
-    libtask_task_t *task = NULL;
-    if (libtask_task_pool_pop_front(io_pool, &task) == 0) {
-      CHECK(libtask_task_execute(task) == 0);
-    }
 
-    if (libtask_task_pool_pop_front(cpu_pool, &task) == 0) {
-      CHECK(libtask_task_execute(task) == 0);
-    }
+    CHECK(libtask_task_pool_execute(io_pool) == 0);
+    CHECK(libtask_task_pool_execute(cpu_pool) == 0);
+
   } while (libtask_atomic_load(&ntasks) > 0);
 
-  CHECK(libtask_get_task_pool_size(io_pool) == 0);
-  CHECK(libtask_get_task_pool_size(cpu_pool) == 0);
   return NULL;
 }
 

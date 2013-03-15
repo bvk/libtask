@@ -148,3 +148,15 @@ libtask_task_pool_switch(libtask_task_pool_t *pool,
   CHECK(libtask_task_pool_insert(pool, task) == 0);
   return libtask_task_yield();
 }
+
+error_t
+libtask_task_pool_execute(libtask_task_pool_t *task_pool)
+{
+  while (libtask_get_task_pool_size(task_pool) > 0) {
+    libtask_task_t *task = NULL;
+    if (libtask_task_pool_pop_front(task_pool, &task) == 0) {
+      libtask_task_execute(task);
+    }
+  }
+  return 0;
+}

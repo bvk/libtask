@@ -28,14 +28,7 @@ void *
 tmain(void *arg_)
 {
   libtask_task_pool_t *pool = (libtask_task_pool_t *)arg_;
-
-  while (libtask_get_task_pool_size(pool) > 0) {
-    libtask_task_t *task = NULL;
-    if (libtask_task_pool_pop_front(pool, &task) == 0) {
-      CHECK(libtask_task_execute(task) == 0);
-    }
-  }
-  CHECK(libtask_get_task_pool_size(pool) == 0);
+  CHECK(libtask_task_pool_execute(pool) == 0);
   return NULL;
 }
 

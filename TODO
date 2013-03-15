@@ -1,13 +1,17 @@
 * TODO
 
-- Task pool should have "execute" function.
-
 - Task pool should have "schedule" function.
 
 - The "schedule" invocation should wake up threads waiting in the
   "execute" function.
 
 * DONE
+
+- Task pool should have "execute" function.
+
+  It is unnecessary to implement the task-pool execution loop in every
+  test case. Having this method as part of the library simplifies the
+  testcases. Also, this makes using libtask library less error prone.
 
 - Every task should have a owner task-pool.
 

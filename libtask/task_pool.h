@@ -153,4 +153,15 @@ error_t
 libtask_task_pool_switch(libtask_task_pool_t *task_pool,
 			 libtask_task_pool_t **old_poolp);
 
+// Execute tasks in a task-pool.
+//
+// This method blocks the calling thread until all tasks of the
+// task-pool are completed.
+//
+// task-pool: The task-pool.
+//
+// Returns zero.
+error_t
+libtask_task_pool_execute(libtask_task_pool_t *task_pool);
+
 #endif // _LIBTASK_TASK_POOL_H_
