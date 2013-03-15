@@ -164,4 +164,15 @@ libtask_task_pool_switch(libtask_task_pool_t *task_pool,
 error_t
 libtask_task_pool_execute(libtask_task_pool_t *task_pool);
 
+//
+// Private interfaces
+//
+
+static inline libtask_task_pool_t *
+libtask__get_task_pool_current(void)
+{
+  libtask_task_t *task = libtask_get_task_current();
+  return task ? task->owner : NULL;
+}
+
 #endif // _LIBTASK_TASK_POOL_H_

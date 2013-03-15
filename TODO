@@ -7,6 +7,21 @@
 
 * DONE
 
+- Add a private interface to get the current task pool.
+
+  Since tasks are always tied to a task-pool, if a _current_ task
+  wants to switch to another task-pool, it has to store the current
+  task-pool in its stack so that it can come back to it later. This is
+  crucial for implementing asynchronous operations.
+
+  The "waiting_link" member of the task structure cannot be used for
+  this purpose because "waiting_link" is not guaranteed to link only
+  to the task-pools (mutexes, semaphres, sleep etc. may use it)
+
+  When current task_pool is returned, no reference is taken on the
+  task-pool. Since this is a private interface, we are expected to
+  handle this as necessary.
+
 - Task pool should have "execute" function.
 
   It is unnecessary to implement the task-pool execution loop in every
