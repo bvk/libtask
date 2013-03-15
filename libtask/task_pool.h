@@ -11,13 +11,13 @@
 
 // Task Pool
 //
-// A task-pool is where a threads look for pending work to be
-// executed.  Users may choose to create multiple task-pools and
-// designate different number of threads for each.  For example, based
-// on the system configuration, executing X io-operations and Y
-// compute-operations in parallel may give optimal utilization, so
-// users can choose to create two task-pools and assign X and Y number
-// of threads to each respectively.
+// A task-pool is where a threads look for pending work.  Users may
+// choose to create multiple task-pools and designate different number
+// of threads for each.  For example, based on the system
+// configuration, executing X io-operations and Y compute-operations
+// in parallel may give optimal utilization, so users can choose to
+// create two task-pools and assign X and Y number of threads to each
+// respectively.
 
 typedef struct libtask_task_pool {
   // Since task-pools are accessed by multiple threads, it is
@@ -94,71 +94,6 @@ libtask_task_pool_unref(libtask_task_pool_t *task_pool) {
   return nref;
 }
 
-// Get the number of tasks in the task pool.
-//
-// task_pool: Task-pool with tasks.
-//
-// Returns number of tasks in the task-pool.
-int32_t
-libtask_get_task_pool_size(libtask_task_pool_t *task_pool);
-
-// Put a task back into the task-pool.
-//
-// task_pool: Task-pool to put the task into.
-//
-// task: Task to add.
-//
-// Returns zero on success or EINVAL if task is removed from the task-pool.
-error_t
-libtask_task_pool_push_back(libtask_task_pool_t *task_pool,
-			    libtask_task_t *task);
-
-// Take a task from the task-pool for execution.
-//
-// task_pool: Task-pool with tasks.
-//
-// taskp: Task selected for execution.
-//
-// Returns zero on success or ENOENT when there are no pending tasks.
-error_t
-libtask_task_pool_pop_front(libtask_task_pool_t *task_pool,
-			    libtask_task_t **taskp);
-
-// Add a standalone task into the task-pool.
-//
-// task_pool: Task-pool to add the task into.
-//
-// task: A new task.
-//
-// Returns zero.
-error_t
-libtask_task_pool_insert(libtask_task_pool_t *task_pool,
-			 libtask_task_t *task);
-
-// Remove a task from the task-pool.
-//
-// task_pool: Task-pool from where task must be removed.
-//
-// task: The task to remove.
-//
-// Returns zero.
-error_t
-libtask_task_pool_erase(libtask_task_pool_t *task_pool,
-			libtask_task_t *task);
-
-// Switch current task to another task-pool.
-//
-// task_pool: Destination task-pool for the switch.
-//
-// old_poolp: When non-null, is stored with a reference to the old
-//            task pool of the current task.
-//
-// Returns zero on success and EINVAL if no task is currently
-// executing.
-error_t
-libtask_task_pool_switch(libtask_task_pool_t *task_pool,
-			 libtask_task_pool_t **old_poolp);
-
 // Execute tasks in a task-pool.
 //
 // This method blocks the calling thread until all tasks of the
@@ -170,15 +105,86 @@ libtask_task_pool_switch(libtask_task_pool_t *task_pool,
 error_t
 libtask_task_pool_execute(libtask_task_pool_t *task_pool);
 
+// Schedule current task to a task-pool.
+//
+// task_pool: The task-pool. When this task-pool is different from
+//            current task-pool, current task is switched to the given
+//            task-pool.
+//
+// Returns 0 on success or EINVAL on a failure.
+error_t
+libtask_task_pool_schedule(libtask_task_pool_t *task_pool);
+
+// Get the number of tasks in the task-pool.
+//
+// task_pool: The task-pool.
+//
+// Returns the number of tasks or zero.
+static inline int32_t
+libtask_get_task_pool_size(libtask_task_pool_t *task_pool)
+{
+  pthread_spin_lock(&task_pool->spinlock);
+  int32_t size = task_pool->ntasks;
+  pthread_spin_unlock(&task_pool->spinlock);
+  return size;
+}
+
+// Get the current task-pool.  Returns NULL if current context doesn't
+// belong to a task-pool.  Note that if task-pool address has to be
+// stored then, a reference shoule be taken.
+static inline libtask_task_pool_t *
+libtask_get_task_pool_current(void)
+{
+  libtask_task_t *task = libtask_get_task_current();
+  return task ? task->owner : NULL;
+}
+
 //
 // Private interfaces
 //
 
-static inline libtask_task_pool_t *
-libtask__get_task_pool_current(void)
+// Associate a task with the task-pool for the first time.
+static inline void
+libtask__task_pool_insert(libtask_task_pool_t *task_pool,
+			  libtask_task_t *task)
+{
+  assert(libtask_list_empty(&task->originating_pool_link));
+
+  pthread_spin_lock(&task_pool->spinlock);
+  task_pool->ntasks++;
+  libtask_task_ref(task);
+  libtask_task_pool_ref(task_pool);
+  libtask_list_push_back(&task_pool->task_list, &task->originating_pool_link);
+
+  task_pool->ntasks++;
+  task->owner = libtask_task_pool_ref(task_pool);
+  libtask_list_push_back(&task_pool->waiting_list, &task->waiting_link);
+  pthread_spin_unlock(&task_pool->spinlock);
+}
+
+// Remove current task from the task-pool because it is complete.
+static inline void
+libtask__task_pool_erase(libtask_task_pool_t *task_pool)
 {
   libtask_task_t *task = libtask_get_task_current();
-  return task ? task->owner : NULL;
+  assert(task);
+  assert(task->complete);
+
+  if (task->owner != task_pool) {
+    libtask_task_pool_schedule(task_pool);
+  }
+
+  pthread_spin_lock(&task_pool->spinlock);
+  task_pool->ntasks--;
+  libtask_list_erase(&task->originating_pool_link);
+  libtask_task_unref(task);
+  libtask_task_pool_unref(task_pool);
+  pthread_spin_unlock(&task_pool->spinlock);
+
+  libtask_task_pool_unref(task->owner);
+  task->owner = NULL;
+  libtask__task_suspend(); // Should never return!
+  assert(0);
 }
 
 #endif // _LIBTASK_TASK_POOL_H_

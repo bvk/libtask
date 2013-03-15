@@ -85,6 +85,8 @@ typedef struct libtask_task {
 //
 // task: Task to initialize.
 //
+// task_pool: Task-pool this task belongs to.
+//
 // function: Address of the function that the task executes.
 //
 // argument: Argument for the function when the task is executed.
@@ -94,6 +96,7 @@ typedef struct libtask_task {
 // Returns 0 on success and ENOMEM on out of memory.
 error_t
 libtask_task_initialize(libtask_task_t *task,
+			struct libtask_task_pool *task_pool,
 			int (*function)(void *),
 			void *argument,
 			int32_t stack_size);
@@ -117,6 +120,7 @@ libtask_task_finalize(libtask_task_t *task);
 // Returns zero on success and ENOMEM on failure.
 error_t
 libtask_task_create(libtask_task_t **taskp,
+		    struct libtask_task_pool *task_pool,
 		    int (*function)(void *),
 		    void *argument,
 		    int32_t stack_size);
@@ -144,54 +148,22 @@ libtask_task_unref(libtask_task_t *task) {
   return nref;
 }
 
-// Execute a task!  Note that a task that is not part of any task-pool
-// can also be executed, but it may return early, for example, on a
-// libtask_task_yield.
+// Get the current task. Returns NULL when called from outside the
+// task context. Note that if task address has to be stored then, a
+// reference should be taken.
+libtask_task_t *
+libtask_get_task_current(void);
+
 //
-// task: The task to execute.
+// Private interfaces
 //
-// Returns zero.
+
+// Resume a task.
 error_t
-libtask_task_execute(libtask_task_t *task);
+libtask__task_execute(libtask_task_t *task);
 
-// Schedule a task back into its task-pool.  If task has no task-pool
-// this acts like a no-op.
-//
-// task: Task to reschedule.
-//
-// Returns zero.
+// Suspend current task.
 error_t
-libtask_task_schedule(libtask_task_t *task);
-
-// Pause the current task!
-//
-// Returns zero on success or EINVAL when called from a non-task
-// context.
-error_t
-libtask_task_suspend(void);
-
-// Pause and reschdule current task!  When a task is paused, control
-// resumes from the location task is executed (which would be a
-// libtask_task_execute function call.)  If task doesn't belong to any
-// task-pool, then it is stopped until another libtask_task_execute is
-// performed.
-//
-// Returns 0 on success. Returns EINVAL when called from a non-task
-// context.
-error_t
-libtask_task_yield(void);
-
-//
-// Helper functions
-//
-
-// Get the current task or NULL.
-libtask_task_t *libtask_get_task_current(void);
-
-// Print all tasks' stack traces.
-void libtask_print_all_tasks(void);
-
-// Returns total number of tasks alive.
-int32_t libtask_count_all_tasks(void);
+libtask__task_suspend(void);
 
 #endif // _LIBTASK_TASK_H_

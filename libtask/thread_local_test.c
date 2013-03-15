@@ -9,7 +9,7 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
-#include "libtask/task_pool.h"
+#include "libtask/libtask.h"
 
 #define CHECK(x) do { if (!(x)) { assert(0); } } while (0)
 
@@ -30,7 +30,7 @@ thread_id()
 void
 switch_thread()
 {
-  libtask_task_yield();
+  libtask_yield();
 }
 
 int
@@ -68,8 +68,8 @@ main(int argc, char *argv[])
   CHECK(pool);
 
   libtask_task_t task;
-  CHECK(libtask_task_initialize(&task, work, NULL, TASK_STACK_SIZE) == 0);
-  CHECK(libtask_task_pool_insert(pool, &task) == 0);
+  CHECK(libtask_task_initialize(&task, pool, work, NULL,
+				TASK_STACK_SIZE) == 0);
 
   // Create threads and wait for them to finish.
   pthread_t threads[NTHREAD];

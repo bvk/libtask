@@ -1,6 +1,6 @@
 AM_CPPFLAGS = -I$(top_srcdir) -D_GNU_SOURCE
 AM_CFLAGS = -std=gnu99 -Wall -Werror -pthread -rdynamic -fno-omit-frame-pointer
-AM_CFLAGS += -Wno-unused-value
+AM_CFLAGS += -Wno-unused-value -Wno-free-nonheap-object
 
 lib_LIBRARIES = libtask.a
 libtask_a_SOURCES  = task.c
@@ -31,4 +31,3 @@ thread_local_test_SOURCES = thread_local_test.c
 thread_local_test_LDADD = libtask.a
 thread_local_test_CFLAGS = $(AM_CFLAGS)
 thread_local_test_CFLAGS += -Wno-int-to-pointer-cast
-thread_local_test_CFLAGS += -Wno-free-nonheap-object

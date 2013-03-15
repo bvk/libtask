@@ -3,7 +3,7 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
-#include "task_pool.h"
+#include "libtask/libtask.h"
 
 #define CHECK(x) do { if (!(x)) { assert(0); } } while (0)
 
@@ -17,7 +17,7 @@ work(void *arg_)
   for (int i = 0; i < NYIELD; i++) {
     *count += 1;
 
-    CHECK(libtask_task_yield() == 0);
+    CHECK(libtask_yield() == 0);
   }
   return 0;
 }
@@ -25,18 +25,18 @@ work(void *arg_)
 int
 main(int argc, char *argv[])
 {
-  int counter = 0;
-  libtask_task_t task;
-  CHECK(libtask_task_initialize(&task, work, &counter, TASK_STACK_SIZE) == 0);
-
   libtask_task_pool_t task_pool;
   CHECK(libtask_task_pool_initialize(&task_pool) == 0);
-  CHECK(libtask_task_pool_insert(&task_pool, &task) == 0);
+
+  int counter = 0;
+  libtask_task_t task;
+  CHECK(libtask_task_initialize(&task, &task_pool, work, &counter,
+				TASK_STACK_SIZE) == 0);
 
   CHECK(libtask_task_pool_execute(&task_pool) == 0);
   CHECK(counter == NYIELD);
 
-  CHECK(libtask_task_finalize(&task) == 0);
-  CHECK(libtask_task_pool_finalize(&task_pool) == 0);
+  CHECK(libtask_task_unref(&task) == 0);
+  CHECK(libtask_task_pool_unref(&task_pool) == 0);
   return 0;
 }

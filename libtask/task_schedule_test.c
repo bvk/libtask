@@ -5,7 +5,7 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
-#include "libtask/task_pool.h"
+#include "libtask/libtask.h"
 
 #define CHECK(x) do { if (!(x)) { assert(0); } } while (0)
 
@@ -19,7 +19,7 @@ int
 work(void *arg_)
 {
   for (int i = 0; i < NSCHEDULE; i++) {
-    libtask_task_yield();
+    libtask_yield();
   }
   return 0;
 }
@@ -43,9 +43,8 @@ main(int argc, char *argv[])
 
   libtask_task_t task[NTASK];
   for (int i = 0; i < NTASK; i++) {
-    CHECK(libtask_task_initialize(&task[i], work, NULL, TASK_STACK_SIZE) == 0);
-    CHECK(libtask_task_pool_insert(pool, &task[i]) == 0);
-    CHECK(libtask_get_task_pool_size(pool) == i + 1);
+    CHECK(libtask_task_initialize(&task[i], pool, work, NULL,
+				  TASK_STACK_SIZE) == 0);
   }
 
   // Create threads and wait for them to finish all tasks.
@@ -59,7 +58,7 @@ main(int argc, char *argv[])
 
   // Destroy the tasks and the task pool.
   for (int i = 0; i < NTASK; i++) {
-    CHECK(libtask_task_finalize(&task[i]) == 0);
+    CHECK(libtask_task_unref(&task[i]) == 0);
   }
   CHECK(libtask_task_pool_unref(pool) == 0);
   return 0;

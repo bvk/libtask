@@ -37,11 +37,12 @@ libtask_get_task_current(void)
   return (libtask_task_t *)pthread_getspecific(current_task_key);
 }
 
-error_t
-libtask_task_initialize(libtask_task_t *task,
-			int (*function)(void *),
-			void *argument,
-			int32_t stack_size)
+static error_t
+initialize(libtask_task_t *task,
+	   struct libtask_task_pool *task_pool,
+	   int (*function)(void *),
+	   void *argument,
+	   int32_t stack_size)
 {
   CHECK(pthread_once(&pthread_once_control, libtask_task_once) == 0);
   if (pthread_once_error) {
@@ -75,8 +76,23 @@ libtask_task_initialize(libtask_task_t *task,
   task->owner = NULL;
   libtask_list_initialize(&task->waiting_link);
   libtask_list_initialize(&task->originating_pool_link);
+  return 0;
+}
+
+error_t
+libtask_task_initialize(libtask_task_t *task,
+			struct libtask_task_pool *task_pool,
+			int (*function)(void *),
+			void *argument,
+			int32_t stack_size)
+{
+  error_t error = initialize(task, task_pool, function, argument, stack_size);
+  if (error != 0) {
+    return error;
+  }
 
   libtask_refcount_initialize(&task->refcount);
+  libtask__task_pool_insert(task_pool, task);
   return 0;
 }
 
@@ -98,6 +114,7 @@ libtask_task_finalize(libtask_task_t *task)
 
 error_t
 libtask_task_create(libtask_task_t **taskp,
+		    libtask_task_pool_t *task_pool,
 		    int (*function)(void *),
 		    void *argument,
 		    int32_t stack_size)
@@ -107,20 +124,20 @@ libtask_task_create(libtask_task_t **taskp,
     return ENOMEM;
   }
 
-  error_t error = libtask_task_initialize(task, function, argument,
-					  stack_size);
+  error_t error = initialize(task, task_pool, function, argument, stack_size);
   if (error != 0) {
     free(task);
     return error;
   }
 
   libtask_refcount_create(&task->refcount);
+  libtask__task_pool_insert(task_pool, task);
   *taskp = task;
   return 0;
 }
 
 error_t
-libtask_task_suspend()
+libtask__task_suspend()
 {
   libtask_task_t *task = libtask_get_task_current();
   if (!task) {
@@ -132,70 +149,44 @@ libtask_task_suspend()
 void *
 libtask__task_main(libtask_task_t *task)
 {
-  assert(libtask_get_task_current() == task);
+  libtask_task_pool_t *originating_pool = libtask_get_task_pool_current();
+
   task->complete = false;
   task->result = task->function(task->argument);
   task->complete = true;
-  assert(libtask_get_task_current() == task);
 
-  libtask_task_pool_erase(task->owner, task);
-
-  assert(task->owner == NULL);
-  assert(libtask_list_empty(&task->waiting_link));
-
-  CHECK(libtask_task_suspend() == 0);
-
+  libtask__task_pool_erase(originating_pool);
   // No task should ever reach here!
   CHECK(0);
   return NULL;
 }
 
 error_t
-libtask_task_execute(libtask_task_t *task)
+libtask__task_execute(libtask_task_t *task)
 {
   if (task->complete) {
+    assert(0);
     return EINVAL;
   }
+  assert(libtask_list_empty(&task->waiting_link));
 
-  // Take a reference to the task so that it cannot be destroyed when
-  // it is running.
+  // Take a reference to the task and its owner so that they cannot be
+  // destroyed when the task is running.
+  libtask_task_pool_t *owner = task->owner;
   libtask_task_ref(task);
+  libtask_task_pool_ref(owner);
 
   // Lock the task's stack.
   CHECK(pthread_mutex_lock(&task->mutex) == 0);
-
   CHECK(libtask__set_task_current(task) == 0);
+
   CHECK(swapcontext(&task->uct_thread, &task->uct_self) == 0);
+
   CHECK(libtask__set_task_current(NULL) == 0);
-
   CHECK(pthread_mutex_unlock(&task->mutex) == 0);
+
+
   libtask_task_unref(task);
-  return 0;
-}
-
-error_t
-libtask_task_schedule(libtask_task_t *task)
-{
-  if (task->complete) {
-    return EINVAL;
-  }
-  libtask_task_pool_push_back(task->owner, task);
-  return 0;
-}
-
-error_t
-libtask_task_yield()
-{
-  libtask_task_t *task = libtask_get_task_current();
-  if (task == NULL) {
-    return pthread_yield();
-  }
-
-  if (task->complete) {
-    return EINVAL;
-  }
-
-  CHECK(libtask_task_schedule(task) == 0);
-  libtask_task_suspend();
+  libtask_task_pool_unref(owner);
   return 0;
 }

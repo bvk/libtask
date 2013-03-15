@@ -1,11 +1,23 @@
 * TODO
 
-- Task pool should have "schedule" function.
-
 - The "schedule" invocation should wake up threads waiting in the
   "execute" function.
 
 * DONE
+
+- Task pool should have "schedule" function.
+
+  The task-pool interface must be simple. It shouldn't expose too
+  verbose public API. It will make changes to the library difficult
+  because user code may break.
+
+  Lets define a "schedule" function that takes care of adding a task
+  into a task-pool and adding runnable task into the waiting
+  list. This change makes the "insert/erase/push_back/pop_front"
+  functions private.
+
+  Also, having higher level interface gives us more room to optmize
+  the underlying implementation.
 
 - Make tasks belong to a task-pool for entire life-time.
 

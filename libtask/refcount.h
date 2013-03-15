@@ -44,6 +44,7 @@ typedef struct {
 #define libtask_refcount_dec(x,dtor,obj,nrefp)		\
   do {							\
     int32_t count = libtask_atomic_sub(&(x)->count, 2);	\
+    assert(count >= 0);					\
     if ((*nrefp = count / 2)) {				\
       break;						\
     }							\

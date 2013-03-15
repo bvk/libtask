@@ -4,7 +4,7 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
-#include "libtask/task_pool.h"
+#include "libtask/libtask.h"
 
 #define CHECK(x) do { if (!(x)) { assert(0); } } while (0)
 
@@ -17,37 +17,34 @@ static libtask_task_pool_t *cpu_pool;
 
 static int32_t nio = 0;
 static int32_t ncpu = 0;
-
-static int32_t ntasks = 0;
+static int32_t nswitch = 0;
 
 int
 work(void *arg_)
 {
-  libtask_atomic_add(&ntasks, 1);
   for (int i = 0; i < NITERATIONS; i++) {
-    libtask_atomic_add(&ncpu, 1);
-
-    libtask_task_pool_switch(io_pool, NULL);
-    usleep(10);
+    CHECK(libtask_task_pool_schedule(io_pool) == 0);
 
     libtask_atomic_add(&nio, 1);
-    libtask_task_pool_switch(cpu_pool, NULL);
+    usleep(10);
+
+    CHECK(libtask_task_pool_schedule(cpu_pool) == 0);
+    libtask_atomic_add(&ncpu, 1);
+
+    libtask_atomic_add(&nswitch, 1);
   }
-  libtask_atomic_sub(&ntasks, 1);
   return 0;
 }
 
 void *
 tmain(void *arg_)
 {
+  libtask_task_pool_t *pool = (libtask_task_pool_t *)arg_;
   do {
+    CHECK(libtask_task_pool_execute(pool) == 0);
+  } while (libtask_atomic_load(&nswitch) < NITERATIONS);
 
-    CHECK(libtask_task_pool_execute(io_pool) == 0);
-    CHECK(libtask_task_pool_execute(cpu_pool) == 0);
-
-  } while (libtask_atomic_load(&ntasks) > 0);
-
-  return NULL;
+  return 0;
 }
 
 int
@@ -59,17 +56,18 @@ main(int argc, char *argv[])
   CHECK(cpu_pool);
 
   libtask_task_t task;
-  CHECK(libtask_task_initialize(&task, work, NULL, TASK_STACK_SIZE) == 0);
-  CHECK(libtask_task_pool_insert(cpu_pool, &task) == 0);
+  CHECK(libtask_task_initialize(&task, cpu_pool, work, NULL,
+				TASK_STACK_SIZE) == 0);
 
-  pthread_t thread;
-  CHECK(pthread_create(&thread, NULL, tmain, NULL) == 0);
-  CHECK(pthread_join(thread, NULL) == 0);
+  pthread_t io_thread;
+  CHECK(pthread_create(&io_thread, NULL, tmain, io_pool) == 0);
+  pthread_t cpu_thread;
+  CHECK(pthread_create(&cpu_thread, NULL, tmain, cpu_pool) == 0);
+  CHECK(pthread_join(io_thread, NULL) == 0);
+  CHECK(pthread_join(cpu_thread, NULL) == 0);
 
-  CHECK(libtask_task_pool_unref(io_pool) == 0);
   CHECK(libtask_task_pool_unref(cpu_pool) == 0);
-  CHECK(libtask_task_finalize(&task) == 0);
-
-  CHECK(nio == ncpu);
+  CHECK(libtask_task_pool_unref(io_pool) == 0);
+  CHECK(libtask_task_unref(&task) == 0);
   return 0;
 }
