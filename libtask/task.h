@@ -67,7 +67,11 @@ typedef struct libtask_task {
   // two members contain the current task-pool where task is currently
   // waiting.
   libtask_list_t waiting_link;
-  struct libtask_task_pool *task_pool;
+
+  // A task is always owned by a task-pool, so that when task yields
+  // the thread, it can be put back in a task-pool for later
+  // execution.
+  struct libtask_task_pool *owner;
 
 } libtask_task_t;
 

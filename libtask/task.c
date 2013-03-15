@@ -58,7 +58,7 @@ libtask_task_initialize(libtask_task_t *task,
   CHECK(pthread_mutex_init(&task->mutex, NULL) == 0);
 
   task->complete = false;
-  task->task_pool = NULL;
+  task->owner = NULL;
   libtask_list_initialize(&task->waiting_link);
 
   // Initialize the task with user function.
@@ -82,7 +82,7 @@ error_t
 libtask_task_finalize(libtask_task_t *task)
 {
   CHECK(libtask_refcount_count(&task->refcount) <= 1);
-  CHECK(task->task_pool == NULL);
+  CHECK(task->owner == NULL);
   CHECK(libtask_list_empty(&task->waiting_link));
 
   if (libtask_get_task_current() == task) {
@@ -137,11 +137,9 @@ libtask__task_main(libtask_task_t *task)
   task->complete = true;
   assert(libtask_get_task_current() == task);
 
-  if (task->task_pool) {
-    libtask_task_pool_erase(task->task_pool, task);
-  }
+  libtask_task_pool_erase(task->owner, task);
 
-  assert(task->task_pool == NULL);
+  assert(task->owner == NULL);
   assert(libtask_list_empty(&task->waiting_link));
 
   CHECK(libtask_task_suspend() == 0);
@@ -180,9 +178,7 @@ libtask_task_schedule(libtask_task_t *task)
   if (task->complete) {
     return EINVAL;
   }
-  if (task->task_pool) {
-    return libtask_task_pool_push_back(task->task_pool, task);
-  }
+  libtask_task_pool_push_back(task->owner, task);
   return 0;
 }
 
@@ -196,11 +192,6 @@ libtask_task_yield()
 
   if (task->complete) {
     return EINVAL;
-  }
-
-  if (task->task_pool == NULL) {
-    libtask_task_suspend();
-    return 0;
   }
 
   CHECK(libtask_task_schedule(task) == 0);

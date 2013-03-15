@@ -20,7 +20,7 @@ static void libtask_task_pool_reset_task(int index, libtask_list_t *link)
 {
   libtask_task_t *task = libtask_list_entry(link, libtask_task_t,
 					    waiting_link);
-  task->task_pool = NULL;
+  task->owner = NULL;
   libtask_list_initialize(&task->waiting_link);
 }
 
@@ -66,7 +66,7 @@ libtask_get_task_pool_size(libtask_task_pool_t *pool)
 error_t
 libtask_task_pool_push_back(libtask_task_pool_t *pool, libtask_task_t *task)
 {
-  if (task->task_pool != pool) {
+  if (task->owner != pool) {
     return EINVAL;
   }
 
@@ -95,11 +95,11 @@ libtask_task_pool_pop_front(libtask_task_pool_t *pool, libtask_task_t **taskp)
 error_t
 libtask_task_pool_insert(libtask_task_pool_t *pool, libtask_task_t *task)
 {
-  CHECK(task->task_pool == NULL);
+  CHECK(task->owner == NULL);
   CHECK(pthread_spin_lock(&pool->spinlock) == 0);
 
   pool->ntasks++;
-  task->task_pool = libtask_task_pool_ref(pool);
+  task->owner = libtask_task_pool_ref(pool);
   libtask_list_push_back(&pool->waiting_list, &task->waiting_link);
   libtask_task_ref(task);
 
@@ -110,14 +110,14 @@ libtask_task_pool_insert(libtask_task_pool_t *pool, libtask_task_t *task)
 error_t
 libtask_task_pool_erase(libtask_task_pool_t *pool, libtask_task_t *task)
 {
-  if (task->task_pool != pool) {
+  if (task->owner != pool) {
     return EINVAL;
   }
 
   CHECK(pthread_spin_lock(&pool->spinlock) == 0);
 
   pool->ntasks--;
-  task->task_pool = NULL;
+  task->owner = NULL;
   if (!libtask_list_empty(&task->waiting_link)) {
     libtask_list_erase(&task->waiting_link);
   }
@@ -133,16 +133,16 @@ libtask_task_pool_switch(libtask_task_pool_t *pool,
 			 libtask_task_pool_t **oldp)
 {
   libtask_task_t *task = libtask_get_task_current();
-  if (task == NULL || task->task_pool == pool) {
+  if (task == NULL || task->owner == pool) {
     return EINVAL;
   }
 
   if (oldp) {
-    *oldp = task->task_pool ? libtask_task_pool_ref(task->task_pool) : NULL;
+    *oldp = task->owner ? libtask_task_pool_ref(task->owner) : NULL;
   }
 
-  if (task->task_pool) {
-    CHECK(libtask_task_pool_erase(task->task_pool, task) == 0);
+  if (task->owner) {
+    CHECK(libtask_task_pool_erase(task->owner, task) == 0);
   }
 
   CHECK(libtask_task_pool_insert(pool, task) == 0);
