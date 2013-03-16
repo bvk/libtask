@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <pthread.h>
 #include <stdint.h>
+#include <semaphore.h>
 
 #include "libtask/list.h"
 #include "libtask/refcount.h"
@@ -11,9 +12,9 @@
 
 // Task Pool
 //
-// A task-pool is where a threads look for pending work.  Users may
-// choose to create multiple task-pools and designate different number
-// of threads for each.  For example, based on the system
+// A task-pool is where a threads look for the pending work.  Users
+// may choose to create multiple task-pools and designate different
+// number of threads for each.  For example, based on the system
 // configuration, executing X io-operations and Y compute-operations
 // in parallel may give optimal utilization, so users can choose to
 // create two task-pools and assign X and Y number of threads to each
@@ -39,9 +40,17 @@ typedef struct libtask_task_pool {
   // analysis and debugging purposes. Tasks are linked into this list
   // through their originating_pool_link.
   libtask_list_t task_list;
+
+  // Number of tasks in this task-pool. This is sum of waiting tasks
+  // and the tasks in the task_list.
   int32_t ntasks;
 
+  // List of tasks waiting for execution.
   libtask_list_t waiting_list;
+
+  // Semaphore to wake up sleeping threads when a new task is adding
+  // to the waiting_list.
+  sem_t semaphore;
 } libtask_task_pool_t;
 
 // Initialize a task-pool created on stack.
@@ -144,47 +153,12 @@ libtask_get_task_pool_current(void)
 //
 
 // Associate a task with the task-pool for the first time.
-static inline void
+void
 libtask__task_pool_insert(libtask_task_pool_t *task_pool,
-			  libtask_task_t *task)
-{
-  assert(libtask_list_empty(&task->originating_pool_link));
-
-  pthread_spin_lock(&task_pool->spinlock);
-  task_pool->ntasks++;
-  libtask_task_ref(task);
-  libtask_task_pool_ref(task_pool);
-  libtask_list_push_back(&task_pool->task_list, &task->originating_pool_link);
-
-  task_pool->ntasks++;
-  task->owner = libtask_task_pool_ref(task_pool);
-  libtask_list_push_back(&task_pool->waiting_list, &task->waiting_link);
-  pthread_spin_unlock(&task_pool->spinlock);
-}
+			  libtask_task_t *task);
 
 // Remove current task from the task-pool because it is complete.
-static inline void
-libtask__task_pool_erase(libtask_task_pool_t *task_pool)
-{
-  libtask_task_t *task = libtask_get_task_current();
-  assert(task);
-  assert(task->complete);
-
-  if (task->owner != task_pool) {
-    libtask_task_pool_schedule(task_pool);
-  }
-
-  pthread_spin_lock(&task_pool->spinlock);
-  task_pool->ntasks--;
-  libtask_list_erase(&task->originating_pool_link);
-  libtask_task_unref(task);
-  libtask_task_pool_unref(task_pool);
-  pthread_spin_unlock(&task_pool->spinlock);
-
-  libtask_task_pool_unref(task->owner);
-  task->owner = NULL;
-  libtask__task_suspend(); // Should never return!
-  assert(0);
-}
+void
+libtask__task_pool_erase(libtask_task_pool_t *task_pool);
 
 #endif // _LIBTASK_TASK_POOL_H_

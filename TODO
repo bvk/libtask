@@ -1,9 +1,11 @@
 * TODO
 
-- The "schedule" invocation should wake up threads waiting in the
-  "execute" function.
-
 * DONE
+
+- Remove busy loop in libtask_task_pool_execute.
+
+  The "schedule" invocation should wake up threads waiting in the
+  "execute" function.
 
 - Task pool should have "schedule" function.
 
