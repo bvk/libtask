@@ -1,5 +1,10 @@
 * TODO
 
+- Create a helper function to simplify assigning threads to a task-pool.
+
+  Adding a helper function that can readily be used as an argument to
+  pthread_create function would be helpful.
+
 * DONE
 
 - Remove busy loop in libtask_task_pool_execute.
