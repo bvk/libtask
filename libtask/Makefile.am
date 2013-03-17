@@ -1,10 +1,11 @@
 AM_CPPFLAGS = -I$(top_srcdir) -D_GNU_SOURCE
 AM_CFLAGS = -std=gnu99 -Wall -Werror -pthread -rdynamic -fno-omit-frame-pointer
-AM_CFLAGS += -Wno-unused-value -Wno-free-nonheap-object
+AM_CFLAGS += -Wno-unused-value -Wno-free-nonheap-object -Wno-format
 
 lib_LIBRARIES = libtask.a
 libtask_a_SOURCES  = task.c
 libtask_a_SOURCES += task_pool.c
+libtask_a_SOURCES += wait_queue.c
 
 #
 # Tests
@@ -31,3 +32,8 @@ thread_local_test_SOURCES = thread_local_test.c
 thread_local_test_LDADD = libtask.a
 thread_local_test_CFLAGS = $(AM_CFLAGS)
 thread_local_test_CFLAGS += -Wno-int-to-pointer-cast
+
+TESTS += producer_consumer_test
+bin_PROGRAMS += producer_consumer_test
+producer_consumer_test_SOURCES = producer_consumer_test.c
+producer_consumer_test_LDADD = libtask.a

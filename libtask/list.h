@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 // NOTE: These are similar to lists in Linux kernel, but are not the same!
 

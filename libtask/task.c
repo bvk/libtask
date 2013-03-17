@@ -185,7 +185,6 @@ libtask__task_execute(libtask_task_t *task)
   CHECK(libtask__set_task_current(NULL) == 0);
   CHECK(pthread_mutex_unlock(&task->mutex) == 0);
 
-
   libtask_task_unref(task);
   libtask_task_pool_unref(owner);
   return 0;

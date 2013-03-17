@@ -5,7 +5,19 @@
   Adding a helper function that can readily be used as an argument to
   pthread_create function would be helpful.
 
+- Write a test case that checks if pthread_spin_unlock from a
+  different thread works fine.
+
+- Rename libtask_task_execute to libtask_task_resume
+
+- Use wait_queue for task-pool waiting list
+
 * DONE
+
+- Introduce wait queues where threads can sleep and woken up.
+
+  Wait queues will be the underlying mechanism for blocking tasks for
+  synchronization and events.
 
 - Remove busy loop in libtask_task_pool_execute.
 
