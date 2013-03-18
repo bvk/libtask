@@ -1,5 +1,19 @@
 * TODO
 
+- We need the ability to assign threads to task-pool and remove them.
+
+  This would allow us to make threads wait for-ever even when there
+  are no tasks in the task-pool.
+
+  Proposed interface is:
+
+  error_t task_pool_start(task_pool_t *pool, uint32_t *idp);
+  error_t task_pool_stop(task_pool_t *pool, uint32_t id);
+
+  These methods can be invoked from any context by any thread except
+  the thread that is supposed to quit the task-pool. Stop method
+  should block until thread has acknowledged to stop.
+
 - Return void for functions that always succeed.
 
   This would simplify error handling.
