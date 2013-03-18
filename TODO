@@ -1,5 +1,18 @@
 * TODO
 
+- Return void for functions that always succeed.
+
+  This would simplify error handling.
+
+- Define libtask_spinlock_t interface
+
+  Because pthread_spinlock_t behavior is undefined when unlocking
+  thread is different from the calling thread.
+
+  Also, make sure spin_lock and spin_unlock methods don't return an
+  error value. Otherwise, error handling becomes tedious and handling
+  spin_unlock failure when spin_lock succeeds is never obvious.
+
 - Create a helper function to simplify assigning threads to a task-pool.
 
   Adding a helper function that can readily be used as an argument to

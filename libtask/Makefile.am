@@ -5,6 +5,7 @@ AM_CFLAGS += -Wno-unused-value -Wno-free-nonheap-object -Wno-format
 lib_LIBRARIES = libtask.a
 libtask_a_SOURCES  = task.c
 libtask_a_SOURCES += task_pool.c
+libtask_a_SOURCES += util/semaphore.c
 libtask_a_SOURCES += wait_queue.c
 
 #
@@ -37,3 +38,8 @@ TESTS += producer_consumer_test
 bin_PROGRAMS += producer_consumer_test
 producer_consumer_test_SOURCES = producer_consumer_test.c
 producer_consumer_test_LDADD = libtask.a
+
+TESTS += producer_consumer_semaphore_test
+bin_PROGRAMS += producer_consumer_semaphore_test
+producer_consumer_semaphore_test_SOURCES = producer_consumer_semaphore_test.c
+producer_consumer_semaphore_test_LDADD = libtask.a
