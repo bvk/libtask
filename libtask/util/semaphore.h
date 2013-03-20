@@ -8,9 +8,10 @@
 #include "libtask/list.h"
 #include "libtask/task.h"
 #include "libtask/task_pool.h"
+#include "libtask/util/spinlock.h"
 
 typedef struct {
-  pthread_spinlock_t spinlock;
+  libtask_spinlock_t spinlock;
   int32_t count;
   libtask_list_t waiting_list;
 } libtask_semaphore_t;

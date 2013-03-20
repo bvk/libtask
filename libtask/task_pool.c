@@ -16,7 +16,7 @@ libtask_task_pool_initialize(libtask_task_pool_t *pool)
   pool->ntasks = 0;
   libtask_list_initialize(&pool->task_list);
   libtask_list_initialize(&pool->waiting_list);
-  CHECK(pthread_spin_init(&pool->spinlock, PTHREAD_PROCESS_PRIVATE) == 0);
+  libtask_spinlock_initialize(&pool->spinlock);
 
   libtask_refcount_initialize(&pool->refcount);
   return 0;
@@ -30,7 +30,7 @@ libtask_task_pool_finalize(libtask_task_pool_t *pool)
   assert(libtask_list_empty(&pool->waiting_list));
 
   CHECK(sem_destroy(&pool->semaphore) == 0);
-  CHECK(pthread_spin_destroy(&pool->spinlock) == 0);
+  libtask_spinlock_finalize(&pool->spinlock);
   return 0;
 }
 
@@ -60,7 +60,7 @@ libtask__task_pool_insert(libtask_task_pool_t *task_pool,
 {
   assert(libtask_list_empty(&task->originating_pool_link));
 
-  pthread_spin_lock(&task_pool->spinlock);
+  libtask_spinlock_lock(&task_pool->spinlock);
   task_pool->ntasks++;
   libtask_task_ref(task);
   libtask_task_pool_ref(task_pool);
@@ -69,7 +69,7 @@ libtask__task_pool_insert(libtask_task_pool_t *task_pool,
   task_pool->ntasks++;
   task->owner = libtask_task_pool_ref(task_pool);
   libtask_list_push_back(&task_pool->waiting_list, &task->waiting_link);
-  pthread_spin_unlock(&task_pool->spinlock);
+  libtask_spinlock_unlock(&task_pool->spinlock);
 }
 
 void
@@ -83,12 +83,12 @@ libtask__task_pool_erase(libtask_task_pool_t *task_pool)
     libtask_task_pool_schedule(task_pool);
   }
 
-  pthread_spin_lock(&task_pool->spinlock);
+  libtask_spinlock_lock(&task_pool->spinlock);
   task_pool->ntasks--;
   libtask_list_erase(&task->originating_pool_link);
   libtask_task_unref(task);
   libtask_task_pool_unref(task_pool);
-  pthread_spin_unlock(&task_pool->spinlock);
+  libtask_spinlock_unlock(&task_pool->spinlock);
 
   libtask_task_pool_unref(task->owner);
   task->owner = NULL;
@@ -99,7 +99,7 @@ libtask__task_pool_erase(libtask_task_pool_t *task_pool)
 error_t
 libtask_task_pool_execute(libtask_task_pool_t *task_pool)
 {
-  pthread_spin_lock(&task_pool->spinlock);
+  libtask_spinlock_lock(&task_pool->spinlock);
   while (task_pool->ntasks > 0) {
     libtask_list_t *link = libtask_list_pop_front(&task_pool->waiting_list);
     libtask_task_t *task = NULL;
@@ -107,16 +107,16 @@ libtask_task_pool_execute(libtask_task_pool_t *task_pool)
       task_pool->ntasks--;
       task = libtask_list_entry(link, libtask_task_t, waiting_link);
     }
-    pthread_spin_unlock(&task_pool->spinlock);
+    libtask_spinlock_unlock(&task_pool->spinlock);
     if (task) {
       libtask__task_execute(task);
     } else {
       struct timespec ts = { 1, 0 };
       sem_timedwait(&task_pool->semaphore, &ts);
     }
-    pthread_spin_lock(&task_pool->spinlock);
+    libtask_spinlock_lock(&task_pool->spinlock);
   }
-  pthread_spin_unlock(&task_pool->spinlock);
+  libtask_spinlock_unlock(&task_pool->spinlock);
   return 0;
 }
 
@@ -133,12 +133,12 @@ libtask_task_pool_schedule(libtask_task_pool_t *task_pool)
     current_task->owner = libtask_task_pool_ref(task_pool);
   }
 
-  pthread_spin_lock(&task_pool->spinlock);
+  libtask_spinlock_lock(&task_pool->spinlock);
   task_pool->ntasks++;
   libtask_list_push_back(&task_pool->waiting_list,
 			 &current_task->waiting_link);
   CHECK(sem_post(&task_pool->semaphore) == 0);
-  pthread_spin_unlock(&task_pool->spinlock);
+  libtask_spinlock_unlock(&task_pool->spinlock);
 
   libtask__task_suspend();
   return 0;

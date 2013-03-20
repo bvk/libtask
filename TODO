@@ -1,5 +1,19 @@
 * TODO
 
+- Allow wait_queues to unlock/lock mutexes, libtask spinlocks and
+  pthread spinlocks.
+
+  Proposed interface is:
+
+  error_t wait_queue_sleep(wait_queue_t *wq,
+                           libtask_spinlock_t *spinlock,
+			   pthread_spinlock_t *pspinlock,
+			   pthread_mutex_t *pmutex);
+
+  For now only one type of lock should be specified -- otherwise,
+  locking order needs to be fixed (to avoid deadlocks) and a fixed
+  order may not serve all users.
+
 - We need the ability to assign threads to task-pool and remove them.
 
   This would allow us to make threads wait for-ever even when there
@@ -18,15 +32,6 @@
 
   This would simplify error handling.
 
-- Define libtask_spinlock_t interface
-
-  Because pthread_spinlock_t behavior is undefined when unlocking
-  thread is different from the calling thread.
-
-  Also, make sure spin_lock and spin_unlock methods don't return an
-  error value. Otherwise, error handling becomes tedious and handling
-  spin_unlock failure when spin_lock succeeds is never obvious.
-
 - Create a helper function to simplify assigning threads to a task-pool.
 
   Adding a helper function that can readily be used as an argument to
@@ -40,6 +45,15 @@
 - Use wait_queue for task-pool waiting list
 
 * DONE
+
+- Define libtask_spinlock_t interface
+
+  Because pthread_spinlock_t behavior is undefined when unlocking
+  thread is different from the calling thread.
+
+  Also, make sure spin_lock and spin_unlock methods don't return an
+  error value. Otherwise, error handling becomes tedious and handling
+  spin_unlock failure when spin_lock succeeds is never obvious.
 
 - Introduce wait queues where threads can sleep and woken up.
 

@@ -1,0 +1,12 @@
+2013-03-20  BVK Chaitanya  <bvkchaitanya@gmail.com>
+
+	* libtask/util/spinlock.h:
+
+	Added libtask_spinlock_t interface because (1) pthread spinlock
+	API can return EDEADLK and it is pretty annoying to handle it
+	everytime we take a lock (2) pthread spinlock behavior is
+	undefined when unlocking thread is different from the locked
+	thread.
+
+	Note: libtask uses spinlocks only for short critical sections, so
+	item (2) above is not an issue.

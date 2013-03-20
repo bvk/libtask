@@ -8,9 +8,10 @@
 #include "libtask/list.h"
 #include "libtask/task.h"
 #include "libtask/task_pool.h"
+#include "libtask/util/spinlock.h"
 
 typedef struct {
-  pthread_spinlock_t spinlock;
+  libtask_spinlock_t spinlock;
   libtask_list_t waiting_list;
 } libtask_wait_queue_t;
 
@@ -21,7 +22,7 @@ typedef struct {
 // Returns zero.
 static inline error_t
 libtask_wait_queue_initialize(libtask_wait_queue_t *wq) {
-  pthread_spin_init(&wq->spinlock, PTHREAD_PROCESS_PRIVATE);
+  libtask_spinlock_initialize(&wq->spinlock);
   libtask_list_initialize(&wq->waiting_list);
   return 0;
 }
@@ -33,7 +34,7 @@ libtask_wait_queue_initialize(libtask_wait_queue_t *wq) {
 // Returns zero.
 static inline error_t
 libtask_wait_queue_finalize(libtask_wait_queue_t *wq) {
-  pthread_spin_destroy(&wq->spinlock);
+  libtask_spinlock_finalize(&wq->spinlock);
   return 0;
 }
 

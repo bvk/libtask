@@ -9,6 +9,7 @@
 #include "libtask/list.h"
 #include "libtask/refcount.h"
 #include "libtask/task.h"
+#include "libtask/util/spinlock.h"
 
 // Task Pool
 //
@@ -34,7 +35,7 @@ typedef struct libtask_task_pool {
   // there is no limit on number of tasks in a task-pool.  Since time
   // taken for addition and removal of a task is very small, a
   // spinlock is more appropriate.
-  pthread_spinlock_t spinlock;
+  libtask_spinlock_t spinlock;
 
   // Lists of tasks that belong to this task-pool for inspection,
   // analysis and debugging purposes. Tasks are linked into this list
@@ -132,9 +133,9 @@ libtask_task_pool_schedule(libtask_task_pool_t *task_pool);
 static inline int32_t
 libtask_get_task_pool_size(libtask_task_pool_t *task_pool)
 {
-  pthread_spin_lock(&task_pool->spinlock);
+  libtask_spinlock_lock(&task_pool->spinlock);
   int32_t size = task_pool->ntasks;
-  pthread_spin_unlock(&task_pool->spinlock);
+  libtask_spinlock_unlock(&task_pool->spinlock);
   return size;
 }
 
