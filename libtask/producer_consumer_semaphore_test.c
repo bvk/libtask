@@ -3,9 +3,10 @@
 #include "libtask/libtask.h"
 
 #define CHECK(x) do { if (!(x)) { perror(""); assert(0); } } while (0)
+#define DEBUG(fmt,...) /* printf */ (fmt, ##__VA_ARGS__)
 
-#define NTHREADS 100
-#define NITEMS 20000
+#define NTHREADS 20
+#define NITEMS 1000
 
 #define NPRODUCERS 20
 #define NCONSUMERS 30
@@ -14,19 +15,22 @@
 #define TASK_STACK_SIZE (64*1024)
 
 int32_t buffer[MAXITEMS];
-pthread_spinlock_t spinlock;
+libtask_spinlock_t spinlock;
 libtask_semaphore_t nfree;
 libtask_semaphore_t navail;
 
 int32_t consumed[NITEMS];
 int32_t produced[NITEMS];
 
+int32_t nproduced = 0;
+int32_t nconsumed = 0;
+
+int32_t producer_next = 0;
+int32_t consumer_next = 0;
+
 int
 producer(void *arg_)
 {
-  static int32_t next = 0;
-  static int32_t nproduced = 0;
-
   while (true) {
     // All tasks must exist after NITEMS.
     if (libtask_atomic_add(&nproduced, 1) >= NITEMS) {
@@ -35,24 +39,23 @@ producer(void *arg_)
 
     int32_t value = random();
     libtask_semaphore_down(&nfree);
-    pthread_spin_lock(&spinlock);
+    libtask_spinlock_lock(&spinlock);
 
-    int32_t index = next++;
+    int32_t index = producer_next++;
     produced[index] = value;
     buffer[index % MAXITEMS] = value;
 
-    pthread_spin_unlock(&spinlock);
+    libtask_spinlock_unlock(&spinlock);
     libtask_semaphore_up(&navail);
   }
+  static int32_t nfinished;
+  DEBUG("producer %d finished\n", libtask_atomic_add(&nfinished, 1));
   return 0;
 }
 
 int
 consumer(void *arg_)
 {
-  static int32_t next = 0;
-  static int32_t nconsumed = 0;
-
   while (true) {
     // All tasks must exist after NITEMS.
     if (libtask_atomic_add(&nconsumed, 1) >= NITEMS) {
@@ -60,30 +63,24 @@ consumer(void *arg_)
     }
 
     libtask_semaphore_down(&navail);
-    pthread_spin_lock(&spinlock);
+    libtask_spinlock_lock(&spinlock);
 
-    int32_t index = next++;
+    int32_t index = consumer_next++;
     int32_t value = buffer[index % MAXITEMS];
     consumed[index] = value;
 
-    pthread_spin_unlock(&spinlock);
+    libtask_spinlock_unlock(&spinlock);
     libtask_semaphore_up(&nfree);
   }
+  static int32_t nfinished;
+  DEBUG("consumer %d finished\n", libtask_atomic_add(&nfinished, 1));
   return 0;
-}
-
-void *
-tmain(void *arg_)
-{
-  libtask_task_pool_t *pool = (libtask_task_pool_t *) arg_;
-  libtask_task_pool_execute(pool);
-  return NULL;
 }
 
 int
 main(int argc, char *argv[])
 {
-  CHECK(pthread_spin_init(&spinlock, PTHREAD_PROCESS_PRIVATE) == 0);
+  libtask_spinlock_initialize(&spinlock);
   CHECK(libtask_semaphore_initialize(&nfree, MAXITEMS) == 0);
   CHECK(libtask_semaphore_initialize(&navail, 0) == 0);
 
@@ -104,9 +101,19 @@ main(int argc, char *argv[])
 
   pthread_t threads[NTHREADS];
   for (int i = 0; i < NTHREADS; i++) {
-    CHECK(pthread_create(&threads[i], NULL, tmain, &pool) == 0);
+    CHECK(libtask_task_pool_start(&pool, &threads[i]) == 0);
   }
+
+  // Wait for tasks to finish.
+  for (int i = 0; i < NCONSUMERS; i++) {
+    CHECK(libtask_task_wait(&consumers[i]) == 0);
+  }
+  for (int i = 0; i < NPRODUCERS; i++) {
+    CHECK(libtask_task_wait(&producers[i]) == 0);
+  }
+
   for (int i = 0; i < NTHREADS; i++) {
+    CHECK(libtask_task_pool_stop(&pool, threads[i]) == 0);
     CHECK(pthread_join(threads[i], NULL) == 0);
   }
 
@@ -120,6 +127,7 @@ main(int argc, char *argv[])
   CHECK(libtask_task_pool_unref(&pool) == 0);
   CHECK(libtask_semaphore_finalize(&nfree) == 0);
   CHECK(libtask_semaphore_finalize(&navail) == 0);
+  libtask_spinlock_finalize(&spinlock);
 
   // Verify that producers and consumers have correct values in the
   // correct order.

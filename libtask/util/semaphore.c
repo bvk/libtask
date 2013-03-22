@@ -37,8 +37,8 @@ libtask_semaphore_up(libtask_semaphore_t *sem)
   }
   libtask_task_pool_t *task_pool = task->owner;
   libtask_spinlock_lock(&task_pool->spinlock);
-  task_pool->ntasks++;
   libtask_list_push_back(&task_pool->waiting_list, &task->waiting_link);
+  libtask_condition_signal(&task_pool->waiting_condition);
   libtask_spinlock_unlock(&task_pool->spinlock);
   return 0;
 }

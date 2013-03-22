@@ -23,6 +23,11 @@ bin_PROGRAMS += producer_consumer_semaphore_test
 producer_consumer_semaphore_test_SOURCES = producer_consumer_semaphore_test.c
 producer_consumer_semaphore_test_LDADD = libtask.a
 
+TESTS += producer_consumer_condition_test
+bin_PROGRAMS += producer_consumer_condition_test
+producer_consumer_condition_test_SOURCES = producer_consumer_condition_test.c
+producer_consumer_condition_test_LDADD = libtask.a
+
 TESTS += c10k_test
 bin_PROGRAMS += c10k_test
 c10k_test_SOURCES = c10k_test.c

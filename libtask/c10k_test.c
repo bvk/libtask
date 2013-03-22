@@ -30,7 +30,7 @@
 #include "libtask/libtask.h"
 
 #define CHECK(x) do { if (!(x)) { perror(""); assert(0); } } while (0)
-#define DEBUG(fmt,...) /* fprintf(stderr, fmt, ##__VA_ARGS__) */
+#define DEBUG(fmt,...) /* printf */ (fmt, ##__VA_ARGS__)
 
 #define NUM_IO_THREADS 10
 #define NUM_CPU_THREADS 5
@@ -68,17 +68,6 @@ set_nonblocking(int fd)
 {
   int flags = fcntl(fd, F_GETFL);
   CHECK(fcntl(fd, F_SETFL, flags | O_NONBLOCK) == 0);
-}
-
-static int
-idle_task_main(void *arg_)
-{
-  while (libtask_atomic_load(&nserved) < NSESSIONS ||
-	 libtask_atomic_load(&nrequested) < NSESSIONS) {
-    sleep(1);
-  }
-  DEBUG("idle task finished\n");
-  return 0;
 }
 
 int
@@ -149,7 +138,11 @@ client_worker_main(void *arg_)
 
   CHECK(libtask_semaphore_finalize(&sem) == 0);
   int32_t nfinished = libtask_atomic_add(&nrequested, 1);
-  DEBUG("clients finished: %d\n", nfinished);
+  if (nfinished == NSESSIONS) {
+    DEBUG("all clients finished\n");
+  } else {
+    DEBUG("clients finished: %d\n", nfinished);
+  }
   return 0;
 }
 
@@ -206,7 +199,11 @@ server_worker_main(void *arg_)
 
   CHECK(libtask_semaphore_finalize(&sem) == 0);
   int32_t nfinished = libtask_atomic_add(&nserved, 1);
-  DEBUG("servers finished: %d\n", nfinished);
+  if (nfinished == NSESSIONS) {
+    DEBUG("all servers finished\n");
+  } else {
+    DEBUG("servers finished: %d\n", nfinished);
+  }
   return 0;
 }
 
@@ -247,6 +244,7 @@ listener_task_main(void *arg_)
 				  server_worker_main, (void*)clientfd,
 				  TASK_STACK_SIZE) == 0);
 	CHECK(task != NULL);
+	DEBUG("created new task\n");
 	CHECK(libtask_task_unref(task) != 0);
 
       } else if ((event.events & EPOLLIN) || (event.events & EPOLLOUT)) {
@@ -265,15 +263,6 @@ listener_task_main(void *arg_)
   CHECK(r != -1);
   return 0;
 }
-
-void *
-run_tasks(void *arg_)
-{
-  libtask_task_pool_t *pool = (libtask_task_pool_t *)arg_;
-  CHECK(libtask_task_pool_execute(pool) == 0);
-  return NULL;
-}
-
 
 static error_t
 create_listening_socket(int backlog, int *fdp, uint16_t *portp)
@@ -327,14 +316,7 @@ main(int argc, char *argv[])
   CHECK(libtask_task_pool_create(&io_pool) == 0);
   CHECK(libtask_task_pool_create(&cpu_pool) == 0);
 
-  // Create server and client tasks.
-  libtask_task_t idle_task;
-  CHECK(libtask_task_initialize(&idle_task,
-				io_pool,
-				idle_task_main,
-				NULL,
-				TASK_STACK_SIZE) == 0);
-
+  // Create listener and client tasks.
   libtask_task_t listener_task;
   CHECK(libtask_task_initialize(&listener_task,
 				cpu_pool,
@@ -353,23 +335,30 @@ main(int argc, char *argv[])
 
   pthread_t io_threads[NUM_IO_THREADS];
   for (int i = 0; i < NUM_IO_THREADS; i++) {
-    CHECK(pthread_create(&io_threads[i], NULL, run_tasks, io_pool) == 0);
+    CHECK(libtask_task_pool_start(io_pool, &io_threads[i]) == 0);
   }
   pthread_t cpu_threads[NUM_CPU_THREADS];
   for (int i = 0; i < NUM_CPU_THREADS; i++) {
-    CHECK(pthread_create(&cpu_threads[i], NULL, run_tasks, cpu_pool) == 0);
+    CHECK(libtask_task_pool_start(cpu_pool, &cpu_threads[i]) == 0);
+  }
+
+  // Wait for tasks to finish!
+  CHECK(libtask_task_wait(&listener_task) == 0);
+  for (int i = 0; i < NSESSIONS; i++) {
+    CHECK(libtask_task_wait(&client_tasks[i]) == 0);
   }
 
   // Wait for threads to finish.
   for (int i = 0; i < NUM_IO_THREADS; i++) {
+    CHECK(libtask_task_pool_stop(io_pool, io_threads[i]) == 0);
     CHECK(pthread_join(io_threads[i], NULL) == 0);
   }
   for (int i = 0; i < NUM_CPU_THREADS; i++) {
+    CHECK(libtask_task_pool_stop(cpu_pool, cpu_threads[i]) == 0);
     CHECK(pthread_join(cpu_threads[i], NULL) == 0);
   }
 
   // Destroy the tasks.
-  CHECK(libtask_task_unref(&idle_task) == 0);
   CHECK(libtask_task_unref(&listener_task) == 0);
   for (int i = 0; i < NSESSIONS; i++) {
     CHECK(libtask_task_unref(&client_tasks[i]) == 0);

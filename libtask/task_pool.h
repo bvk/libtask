@@ -4,12 +4,12 @@
 #include <errno.h>
 #include <pthread.h>
 #include <stdint.h>
-#include <semaphore.h>
 
 #include "libtask/list.h"
 #include "libtask/refcount.h"
 #include "libtask/task.h"
 #include "libtask/util/spinlock.h"
+#include "libtask/util/condition.h"
 
 // Task Pool
 //
@@ -42,16 +42,19 @@ typedef struct libtask_task_pool {
   // through their originating_pool_link.
   libtask_list_t task_list;
 
-  // Number of tasks in this task-pool. This is sum of waiting tasks
-  // and the tasks in the task_list.
+  // Number of tasks in this task-pool. This is the list of tasks
+  // originated from this task-pool. Since tasks can switch betweek
+  // task-pools, there can be more tasks than the originating in a
+  // task-pool.
   int32_t ntasks;
 
-  // List of tasks waiting for execution.
+  // List of tasks waiting for execution and the condition variable
+  // that wakes up waiting threads.
   libtask_list_t waiting_list;
+  libtask_condition_t waiting_condition;
 
-  // Semaphore to wake up sleeping threads when a new task is adding
-  // to the waiting_list.
-  sem_t semaphore;
+  // List of threads looking for work on this task-pool.
+  libtask_list_t thread_list;
 } libtask_task_pool_t;
 
 // Initialize a task-pool created on stack.
@@ -104,16 +107,37 @@ libtask_task_pool_unref(libtask_task_pool_t *task_pool) {
   return nref;
 }
 
-// Execute tasks in a task-pool.
-//
-// This method blocks the calling thread until all tasks of the
-// task-pool are completed.
+// Execute tasks from the task-pool. Thread is blocked in executing
+// and waiting for tasks in the task-pool until it is requested to
+// stop.
 //
 // task-pool: The task-pool.
 //
-// Returns zero.
+// Returns zero on success or EINVAL if thread is already
+// executing tasks from a task-pool.
 error_t
 libtask_task_pool_execute(libtask_task_pool_t *task_pool);
+
+// Create a new thread and assign it to a task-pool for execution.
+//
+// task-pool: The task-pool.
+//
+// threadp: Output variable where id of the new thread is returned.
+//
+// Returns zero on success or an error number on failure.
+error_t
+libtask_task_pool_start(libtask_task_pool_t *task_pool, pthread_t *threadp);
+
+// Stop a thread executing tasks from a task-pool.
+//
+// task-pool: The task-pool.
+//
+// thread: Id of the thread.
+//
+// Returns zero on success and ENOENT if no such thread is executing
+// tasks from the task-pool.
+error_t
+libtask_task_pool_stop(libtask_task_pool_t *task_pool, pthread_t thread);
 
 // Schedule current task to a task-pool.
 //

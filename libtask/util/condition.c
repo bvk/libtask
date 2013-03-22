@@ -65,8 +65,8 @@ libtask_condition_wakeup_first(libtask_condition_t *cond, libtask_list_t *list)
     libtask_spinlock_lock(&task_pool->spinlock);
   }
 
-  task_pool->ntasks++;
   libtask_list_push_back(&task_pool->waiting_list, &task->waiting_link);
+  libtask_condition_signal(&task_pool->waiting_condition);
 
   if (&task_pool->spinlock != cond->spinlock) {
     libtask_spinlock_unlock(&task_pool->spinlock);

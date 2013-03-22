@@ -6,8 +6,10 @@
 #include "libtask/libtask.h"
 
 #define CHECK(x) do { if (!(x)) { assert(0); } } while (0)
+#define DEBUG(fmt,...) printf (fmt, ##__VA_ARGS__)
 
-#define NYIELD 1000
+#define NTHREADS 10
+#define NYIELD 10000
 #define TASK_STACK_SIZE (16 * 1024)
 
 int
@@ -33,7 +35,16 @@ main(int argc, char *argv[])
   CHECK(libtask_task_initialize(&task, &task_pool, work, &counter,
 				TASK_STACK_SIZE) == 0);
 
-  CHECK(libtask_task_pool_execute(&task_pool) == 0);
+  pthread_t pthread[NTHREADS];
+  for (int i = 0; i < NTHREADS; i++) {
+    CHECK(libtask_task_pool_start(&task_pool, &pthread[i]) == 0);
+  }
+  CHECK(libtask_task_wait(&task) == 0);
+  for (int i = 0; i < NTHREADS; i++) {
+    CHECK(libtask_task_pool_stop(&task_pool, pthread[i]) == 0);
+    CHECK(pthread_join(pthread[i], NULL) == 0);
+  }
+
   CHECK(counter == NYIELD);
 
   CHECK(libtask_task_unref(&task) == 0);
