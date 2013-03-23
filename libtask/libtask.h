@@ -3,7 +3,6 @@
 
 #include "libtask/task.h"
 #include "libtask/task_pool.h"
-#include "libtask/wait_queue.h"
 #include "libtask/util/semaphore.h"
 #include "libtask/util/spinlock.h"
 #include "libtask/util/condition.h"

@@ -8,7 +8,6 @@ libtask_a_SOURCES  = task.c
 libtask_a_SOURCES += task_pool.c
 libtask_a_SOURCES += util/semaphore.c
 libtask_a_SOURCES += util/condition.c
-libtask_a_SOURCES += wait_queue.c
 
 #
 # Tests
@@ -18,11 +17,6 @@ TESTS = task_execute_test
 bin_PROGRAMS = task_execute_test
 task_execute_test_SOURCES = task_execute_test.c
 task_execute_test_LDADD = libtask.a
-
-TESTS += producer_consumer_test
-bin_PROGRAMS += producer_consumer_test
-producer_consumer_test_SOURCES = producer_consumer_test.c
-producer_consumer_test_LDADD = libtask.a
 
 TESTS += producer_consumer_semaphore_test
 bin_PROGRAMS += producer_consumer_semaphore_test
