@@ -9,6 +9,7 @@
 
 #include "libtask/list.h"
 #include "libtask/refcount.h"
+#include "libtask/util/condition.h"
 
 // Task
 //
@@ -47,20 +48,26 @@ typedef struct libtask_task {
   // Every task is created with its own stack. These two members refer
   // to the stack location and the size. Note that different tasks can
   // have different stack sizes.
+  //
+  // When a task is moved from one task-pool to another, it is
+  // possible that a thread in the destination task-pool may
+  // immediately pick the task for execution. So, we need a lock to
+  // protect concurrent access to the stack.
   char *stack;
   int32_t nbytes;
+  libtask_spinlock_t stack_spinlock;
 
   // These members refer to the task's function definition, its
-  // argument and the result.
-  int result;
+  // argument.
   void *argument;
   int (*function)(void *);
 
-  // Flags indicating the task state.
+  // Task status, flags and the condition variable to wait for the
+  // task to finish.
+  int result;
   bool complete;
-
-  // Mutex to ensure no two threads operate on the same stack at once.
-  pthread_mutex_t mutex;
+  libtask_condition_t completed;
+  libtask_spinlock_t completed_spinlock;
 
   // Normally, runnable tasks wait in the task-pools and one or more
   // threads pick up tasks from the task-pools for execution. Below
@@ -147,6 +154,14 @@ libtask_task_unref(libtask_task_t *task) {
   libtask_refcount_dec(&task->refcount, libtask_task_finalize, task, &nref);
   return nref;
 }
+
+// Wait for a task to finish.
+//
+// task: Task to wait for.
+//
+// Returns zero.
+error_t
+libtask_task_wait(libtask_task_t *task);
 
 // Get the current task. Returns NULL when called from outside the
 // task context. Note that if task address has to be stored then, a

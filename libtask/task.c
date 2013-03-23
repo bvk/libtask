@@ -56,14 +56,14 @@ initialize(libtask_task_t *task,
 
   task->stack = stack;
   task->nbytes = stack_size;
-  CHECK(pthread_mutex_init(&task->mutex, NULL) == 0);
-
-  task->complete = false;
-
-  // Initialize the task with user function.
-  task->result = 0;
   task->argument = argument;
   task->function = function;
+  libtask_spinlock_initialize(&task->stack_spinlock);
+
+  task->result = 0;
+  task->complete = false;
+  libtask_spinlock_initialize(&task->completed_spinlock);
+  libtask_condition_initialize(&task->completed, &task->completed_spinlock);
 
   CHECK(getcontext(&task->uct_self) == 0);
   task->uct_self.uc_stack.ss_sp = task->stack;
@@ -106,7 +106,10 @@ libtask_task_finalize(libtask_task_t *task)
   CHECK(libtask_list_empty(&task->waiting_link));
   CHECK(libtask_list_empty(&task->originating_pool_link));
 
-  CHECK(pthread_mutex_destroy(&task->mutex) == 0);
+  libtask_condition_finalize(&task->completed);
+  libtask_spinlock_finalize(&task->completed_spinlock);
+  libtask_spinlock_finalize(&task->stack_spinlock);
+
   free(task->stack);
   task->stack = NULL;
   return 0;
@@ -137,6 +140,17 @@ libtask_task_create(libtask_task_t **taskp,
 }
 
 error_t
+libtask_task_wait(libtask_task_t *task)
+{
+  libtask_spinlock_lock(&task->completed_spinlock);
+  while (task->complete == false) {
+    libtask_condition_wait(&task->completed);
+  }
+  libtask_spinlock_unlock(&task->completed_spinlock);
+  return 0;
+}
+
+error_t
 libtask__task_suspend()
 {
   libtask_task_t *task = libtask_get_task_current();
@@ -151,9 +165,13 @@ libtask__task_main(libtask_task_t *task)
 {
   libtask_task_pool_t *originating_pool = libtask_get_task_pool_current();
 
-  task->complete = false;
-  task->result = task->function(task->argument);
+  int result = task->function(task->argument);
+
+  libtask_spinlock_lock(&task->completed_spinlock);
   task->complete = true;
+  task->result = result;
+  libtask_condition_broadcast(&task->completed);
+  libtask_spinlock_unlock(&task->completed_spinlock);
 
   libtask__task_pool_erase(originating_pool);
   // No task should ever reach here!
@@ -177,13 +195,13 @@ libtask__task_execute(libtask_task_t *task)
   libtask_task_pool_ref(owner);
 
   // Lock the task's stack.
-  CHECK(pthread_mutex_lock(&task->mutex) == 0);
+  libtask_spinlock_lock(&task->stack_spinlock);
   CHECK(libtask__set_task_current(task) == 0);
 
   CHECK(swapcontext(&task->uct_thread, &task->uct_self) == 0);
 
   CHECK(libtask__set_task_current(NULL) == 0);
-  CHECK(pthread_mutex_unlock(&task->mutex) == 0);
+  libtask_spinlock_unlock(&task->stack_spinlock);
 
   libtask_task_unref(task);
   libtask_task_pool_unref(owner);
