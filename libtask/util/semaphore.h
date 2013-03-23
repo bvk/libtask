@@ -12,7 +12,7 @@
 
 typedef struct {
   libtask_spinlock_t spinlock;
-  int32_t count;
+  int64_t count;
   libtask_list_t waiting_list;
 } libtask_semaphore_t;
 
@@ -20,33 +20,27 @@ typedef struct {
 //
 // sem: The semaphore.
 //
-// Returns 0 on success and an error number on failure.
-error_t
+// count: The initial value.
+void
 libtask_semaphore_initialize(libtask_semaphore_t *sem, int32_t count);
 
 // Destroy a semaphore. No tasks must be waiting on the semaphore.
 //
 // sem: The semaphore.
-//
-// Returns 0 on success and an error number on failure.
-error_t
+void
 libtask_semaphore_finalize(libtask_semaphore_t *sem);
 
 // Up a semaphore.
 //
 // sem: The semaphore.
-//
-// Returns 0 on success and an error number on failure.
-error_t
+void
 libtask_semaphore_up(libtask_semaphore_t *sem);
 
-// Down a semaphore and wait if necessary.
+// Down a semaphore and wait if necessary. This function should be
+// called only from task context.
 //
 // sem: The semaphore.
-//
-// Returns zero when task is woken up; returns EINVAL when called from
-// outside the task context.
-error_t
+void
 libtask_semaphore_down(libtask_semaphore_t *sem);
 
 #endif // _LIBTASK_SEMAPHORE_H_

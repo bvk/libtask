@@ -92,7 +92,7 @@ client_worker_main(void *arg_)
   libtask_task_t *current = libtask_get_task_current();
 
   libtask_semaphore_t sem;
-  CHECK(libtask_semaphore_initialize(&sem, 0) == 0);
+  libtask_semaphore_initialize(&sem, 0);
 
   struct epoll_event event;
   event.events = 0;
@@ -136,7 +136,8 @@ client_worker_main(void *arg_)
   CHECK(r != -1);
   close(sockfd);
 
-  CHECK(libtask_semaphore_finalize(&sem) == 0);
+  libtask_semaphore_finalize(&sem);
+
   int32_t nfinished = libtask_atomic_add(&nrequested, 1);
   if (nfinished == NSESSIONS) {
     DEBUG("all clients finished\n");
@@ -153,7 +154,7 @@ server_worker_main(void *arg_)
   libtask_task_t *current = libtask_get_task_current();
 
   libtask_semaphore_t sem;
-  CHECK(libtask_semaphore_initialize(&sem, 0) == 0);
+  libtask_semaphore_initialize(&sem, 0);
 
   struct epoll_event event;
   event.events = 0;
@@ -197,7 +198,8 @@ server_worker_main(void *arg_)
   CHECK(r != -1);
   close(sockfd);
 
-  CHECK(libtask_semaphore_finalize(&sem) == 0);
+  libtask_semaphore_finalize(&sem);
+
   int32_t nfinished = libtask_atomic_add(&nserved, 1);
   if (nfinished == NSESSIONS) {
     DEBUG("all servers finished\n");
@@ -250,7 +252,7 @@ listener_task_main(void *arg_)
       } else if ((event.events & EPOLLIN) || (event.events & EPOLLOUT)) {
 	/* Event is on a client fd, so schedule the corresponding task. */
 	libtask_semaphore_t *sem = (libtask_semaphore_t *) event.data.ptr;
-	CHECK(libtask_semaphore_up(sem) == 0);
+	libtask_semaphore_up(sem);
 
       } else {
 	DEBUG("unknown event for %p\n", event.data.ptr);

@@ -81,8 +81,8 @@ int
 main(int argc, char *argv[])
 {
   libtask_spinlock_initialize(&spinlock);
-  CHECK(libtask_semaphore_initialize(&nfree, MAXITEMS) == 0);
-  CHECK(libtask_semaphore_initialize(&navail, 0) == 0);
+  libtask_semaphore_initialize(&nfree, MAXITEMS);
+  libtask_semaphore_initialize(&navail, 0);
 
   libtask_task_pool_t pool;
   CHECK(libtask_task_pool_initialize(&pool) == 0);
@@ -125,8 +125,8 @@ main(int argc, char *argv[])
   }
 
   CHECK(libtask_task_pool_unref(&pool) == 0);
-  CHECK(libtask_semaphore_finalize(&nfree) == 0);
-  CHECK(libtask_semaphore_finalize(&navail) == 0);
+  libtask_semaphore_finalize(&nfree);
+  libtask_semaphore_finalize(&navail);
   libtask_spinlock_finalize(&spinlock);
 
   // Verify that producers and consumers have correct values in the

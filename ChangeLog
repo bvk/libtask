@@ -1,3 +1,17 @@
+2013-03-23  BVK Chaitanya  <bvkchaitanya@gmail.com>
+
+	* libtask/util/semaphore.h:
+
+	Modified the libtask_semaphore_t interface to not return any error
+	code. Also, updated the integer stored in the semaphore to
+	int64_t. Since semaphore value is incremented or decremented by
+	one, overflowing a 64-bit value is very unlikely (it takes 73
+	years to for a 4GHz processor.)
+
+	With the above changes, semaphore operations always succeed. This
+	simplifies the error handling because we don't need to take care
+	of the failure cases.
+
 2013-03-20  BVK Chaitanya  <bvkchaitanya@gmail.com>
 
 	* libtask/util/spinlock.h:

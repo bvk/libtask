@@ -1,5 +1,4 @@
 #include <assert.h>
-#include <semaphore.h>
 #include <stdio.h>
 
 #include "libtask/libtask.h"
