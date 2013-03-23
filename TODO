@@ -1,18 +1,16 @@
 * TODO
 
-- Allow wait_queues to unlock/lock mutexes, libtask spinlocks and
-  pthread spinlocks.
+- Return void for functions that always succeed.
 
-  Proposed interface is:
+  This would simplify error handling.
 
-  error_t wait_queue_sleep(wait_queue_t *wq,
-                           libtask_spinlock_t *spinlock,
-			   pthread_spinlock_t *pspinlock,
-			   pthread_mutex_t *pmutex);
+- Write a test case that checks if pthread_spin_unlock from a
+  different thread works fine.
 
-  For now only one type of lock should be specified -- otherwise,
-  locking order needs to be fixed (to avoid deadlocks) and a fixed
-  order may not serve all users.
+- Rename libtask_task_execute to libtask_task_resume
+
+* DONE
+
 
 - We need the ability to assign threads to task-pool and remove them.
 
@@ -25,26 +23,10 @@
   error_t task_pool_stop(task_pool_t *pool, uint32_t id);
 
   These methods can be invoked from any context by any thread except
-  the thread that is supposed to quit the task-pool. Stop method
-  should block until thread has acknowledged to stop.
-
-- Return void for functions that always succeed.
-
-  This would simplify error handling.
-
-- Create a helper function to simplify assigning threads to a task-pool.
-
-  Adding a helper function that can readily be used as an argument to
-  pthread_create function would be helpful.
-
-- Write a test case that checks if pthread_spin_unlock from a
-  different thread works fine.
-
-- Rename libtask_task_execute to libtask_task_resume
-
-- Use wait_queue for task-pool waiting list
-
-* DONE
+  the thread that is supposed to quit the task-pool. When stop method
+  returns, thread may still be executing its last task from the
+  task-pool. Other mechanisms should be used to signal existing from
+  the task-pool.
 
 - Define libtask_spinlock_t interface
 
