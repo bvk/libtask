@@ -32,4 +32,9 @@ libtask_spinlock_unlock(libtask_spinlock_t *lock) {
   libtask_atomic_store(&lock->value, 1);
 }
 
+static inline bool
+libtask_spinlock_status(libtask_spinlock_t *lock) {
+  return libtask_atomic_load(&lock->value) == 1;
+}
+
 #endif // _LIBTASK_UTIL_SPINLOCK_H_

@@ -7,6 +7,7 @@ lib_LIBRARIES = libtask.a
 libtask_a_SOURCES  = task.c
 libtask_a_SOURCES += task_pool.c
 libtask_a_SOURCES += util/semaphore.c
+libtask_a_SOURCES += util/condition.c
 libtask_a_SOURCES += wait_queue.c
 
 #
@@ -48,3 +49,8 @@ bin_PROGRAMS += c10k_test
 c10k_test_SOURCES = c10k_test.c
 c10k_test_LDADD = libtask.a
 c10k_test_CFLAGS = $(AM_CFLAGS) -Wno-unused-variable
+
+TESTS += condition_pthread_test
+bin_PROGRAMS += condition_pthread_test
+condition_pthread_test_SOURCES = condition_pthread_test.c
+condition_pthread_test_LDADD = libtask.a
