@@ -21,12 +21,12 @@
 #define _LIBTASK_SEMAPHORE_H_
 
 #include <assert.h>
-#include <stdint.h>
 #include <pthread.h>
+#include <stdint.h>
 
-#include "libtask/list.h"
 #include "libtask/task.h"
 #include "libtask/task_pool.h"
+#include "libtask/util/list.h"
 #include "libtask/util/spinlock.h"
 
 typedef struct {

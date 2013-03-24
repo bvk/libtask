@@ -23,7 +23,7 @@
 #include <assert.h>
 #include <stdint.h>
 
-#include "libtask/atomic.h"
+#include "libtask/util/atomic.h"
 
 typedef struct {
   volatile int32_t value;

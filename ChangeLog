@@ -1,5 +1,13 @@
 2013-03-23  BVK Chaitanya  <bvkchaitanya@gmail.com>
 
+	* libtask/util/atomic.h:
+	* libtask/util/list.h:
+	* libtask/util/refcount.h:
+
+	Moved from the libtask directory into the util.
+
+2013-03-23  BVK Chaitanya  <bvkchaitanya@gmail.com>
+
 	Added GPLv3 Copyright header to all files.
 
 2013-03-23  BVK Chaitanya  <bvkchaitanya@gmail.com>

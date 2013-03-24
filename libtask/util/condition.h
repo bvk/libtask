@@ -21,7 +21,8 @@
 #define _LIBTASK_UTIL_CONDITION_H_
 
 #include <pthread.h>
-#include "libtask/list.h"
+
+#include "libtask/util/list.h"
 #include "libtask/util/spinlock.h"
 
 // This condition variable implementation that works with

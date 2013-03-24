@@ -20,7 +20,7 @@
 #ifndef _LIBTASK_REFCOUNT_H_
 #define _LIBTASK_REFCOUNT_H_
 
-#include "libtask/atomic.h"
+#include "libtask/util/atomic.h"
 
 // Reference Counting
 //
