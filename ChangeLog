@@ -1,5 +1,9 @@
 2013-03-23  BVK Chaitanya  <bvkchaitanya@gmail.com>
 
+	Added GPLv3 Copyright header to all files.
+
+2013-03-23  BVK Chaitanya  <bvkchaitanya@gmail.com>
+
 	* libtask/util/semaphore.h:
 
 	Modified the libtask_semaphore_t interface to not return any error
