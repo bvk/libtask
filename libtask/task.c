@@ -17,12 +17,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include <stdio.h>
-#include <assert.h>
-
 #include "libtask/task_pool.h"
-
-#define CHECK(x) do { if (!(x)) { assert(0); } } while (0)
+#include "libtask/util/log.h"
 
 // Pthread key that keeps track of current task.
 static pthread_key_t current_task_key;

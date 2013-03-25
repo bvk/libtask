@@ -17,13 +17,10 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include <assert.h>
-
 #include "libtask/task.h"
 #include "libtask/task_pool.h"
 #include "libtask/util/condition.h"
-
-#define CHECK(x) do { if (!(x)) { assert(0); } } while (0)
+#include "libtask/util/log.h"
 
 void
 libtask_condition_initialize(libtask_condition_t *cond,

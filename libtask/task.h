@@ -20,10 +20,7 @@
 #ifndef _LIBTASK_TASK_H_
 #define _LIBTASK_TASK_H_
 
-#include <errno.h>
-#include <error.h>
 #include <pthread.h>
-#include <stdint.h>
 #include <ucontext.h>
 
 #include "libtask/util/condition.h"

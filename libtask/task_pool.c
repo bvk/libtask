@@ -17,12 +17,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include <assert.h>
-#include <stdio.h>
-
 #include "libtask/libtask.h"
-
-#define CHECK(x) do { if (!(x)) { assert(0); } } while (0)
+#include "libtask/util/log.h"
 
 error_t
 libtask_task_pool_initialize(libtask_task_pool_t *pool)

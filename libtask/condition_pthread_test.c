@@ -17,20 +17,54 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+#include <argp.h>
 #include <pthread.h>
 
 #include "libtask/libtask.h"
+#include "libtask/util/log.h"
 
-#define CHECK(x) do { if (!(x)) { assert(0); } } while (0)
-#define DEBUG(fmt,...) /* printf */ (fmt, ##__VA_ARGS__)
-
-#define NTHREADS 10
+static int32_t num_threads = 10;
 
 libtask_spinlock_t spinlock;
 libtask_condition_t condition;
 
 int32_t nwaiting_for_signal;
 int32_t nwaiting_for_broadcast;
+
+static struct argp_option options[] = {
+  {"num-threads", 0, "N", 0, "Number of threads in the task-pool."},
+  {0}
+};
+
+static bool
+strtoint32(const char *arg, int base, int32_t *valuep)
+{
+  char *endptr = NULL;
+  long int value = strtol(arg, &endptr, base);
+  if (((value == LONG_MIN || value == LONG_MAX) && errno == ERANGE) ||
+      (value < INT32_MIN || value > INT32_MAX) ||
+      (endptr[0] != '\0')) {
+    return false;
+  }
+  *valuep = (int32_t) value;
+  return true;
+}
+
+static error_t
+parse_options(int key, char *arg, struct argp_state *state)
+{
+  switch(key) {
+  case 0: // num-threads
+    if (!strtoint32(arg, 10, &num_threads) || num_threads <= 0) {
+      argp_error(state, "Invalid value %s for --%s\n", arg, options[key].name);
+    }
+    break;
+
+  default:
+    return ARGP_ERR_UNKNOWN;
+  }
+  return 0;
+}
 
 void *
 tmain(void *arg_)
@@ -65,17 +99,20 @@ tmain(void *arg_)
 int
 main(int argc, char *argv[])
 {
+  struct argp argp = { options, parse_options };
+  argp_parse(&argp, argc, argv, 0, 0, 0);
+
   libtask_spinlock_initialize(&spinlock);
   libtask_condition_initialize(&condition, &spinlock);
 
-  pthread_t pthreads[NTHREADS];
-  for (int i = 0; i < NTHREADS; i++) {
+  pthread_t pthreads[num_threads];
+  for (int i = 0; i < num_threads; i++) {
     CHECK(pthread_create(pthreads + i, NULL, tmain, NULL) == 0);
   }
 
   // Block for all threads to wait!
   DEBUG("Waiting for all threads to block\n");
-  while (libtask_atomic_load(&nwaiting_for_broadcast) < NTHREADS) {
+  while (libtask_atomic_load(&nwaiting_for_broadcast) < num_threads) {
     pthread_yield();
   }
 
@@ -92,11 +129,11 @@ main(int argc, char *argv[])
 
   // Block for all threads to wait again!
   DEBUG("Waiting for all threads to block again\n");
-  while (libtask_atomic_load(&nwaiting_for_signal) < NTHREADS) {
+  while (libtask_atomic_load(&nwaiting_for_signal) < num_threads) {
     pthread_yield();
   }
 
-  for (int i = 0; i < NTHREADS; i++) {
+  for (int i = 0; i < num_threads; i++) {
     DEBUG("Wakup %d\n", i);
     libtask_spinlock_lock(&spinlock);
     libtask_condition_signal(&condition);
@@ -110,7 +147,7 @@ main(int argc, char *argv[])
     pthread_yield();
   }
 
-  for (int i = 0; i < NTHREADS; i++) {
+  for (int i = 0; i < num_threads; i++) {
     CHECK(pthread_join(pthreads[i], NULL) == 0);
   }
 

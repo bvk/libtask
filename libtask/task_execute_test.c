@@ -17,19 +17,23 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include <assert.h>
-#include <stdio.h>
-#include <sys/syscall.h>
-#include <unistd.h>
+#include <argp.h>
 
 #include "libtask/libtask.h"
-
-#define CHECK(x) do { if (!(x)) { assert(0); } } while (0)
-#define DEBUG(fmt,...) printf (fmt, ##__VA_ARGS__)
+#include "libtask/util/log.h"
 
 #define NTHREADS 10
 #define NYIELD 10000
 #define TASK_STACK_SIZE (16 * 1024)
+
+static int32_t num_threads = 10;
+static int32_t num_yield = 10000;
+
+static struct argp_option options[] = {
+  {"num-threads",   0, "N", 0, "Number of threads to use with the task-pool."},
+  {"num-yield",     1, "N", 0, "Number of yeilds to perform by the task."},
+  {0}
+};
 
 int
 work(void *arg_)
@@ -43,9 +47,49 @@ work(void *arg_)
   return 0;
 }
 
+
+static bool
+strtoint32(const char *arg, int base, int32_t *valuep)
+{
+  char *endptr = NULL;
+  long int value = strtol(arg, &endptr, base);
+  if (((value == LONG_MIN || value == LONG_MAX) && errno == ERANGE) ||
+      (value < INT32_MIN || value > INT32_MAX) ||
+      (endptr[0] != '\0')) {
+    return false;
+  }
+  *valuep = (int32_t) value;
+  return true;
+}
+
+static error_t
+parse_options(int key, char *arg, struct argp_state *state)
+{
+  switch(key) {
+  case 0: // num-threads
+    if (!strtoint32(arg, 10, &num_threads) || num_threads <= 0) {
+      argp_error(state, "Invalid value %s for --%s\n", arg, options[key].name);
+    }
+    break;
+
+  case 1: // num-yields
+    if (!strtoint32(arg, 10, &num_yield) || num_yield <= 0) {
+      argp_error(state, "Invalid value %s for --%s\n", arg, options[key].name);
+    }
+    break;
+
+  default:
+    return ARGP_ERR_UNKNOWN;
+  }
+  return 0;
+}
+
 int
 main(int argc, char *argv[])
 {
+  struct argp argp = { options, parse_options };
+  argp_parse(&argp, argc, argv, 0, 0, 0);
+
   libtask_task_pool_t task_pool;
   CHECK(libtask_task_pool_initialize(&task_pool) == 0);
 

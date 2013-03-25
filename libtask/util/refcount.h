@@ -17,8 +17,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#ifndef _LIBTASK_REFCOUNT_H_
-#define _LIBTASK_REFCOUNT_H_
+#ifndef _LIBTASK_UTIL_REFCOUNT_H_
+#define _LIBTASK_UTIL_REFCOUNT_H_
 
 #include "libtask/util/atomic.h"
 
@@ -73,4 +73,4 @@ typedef struct {
     }							\
   } while (0)
 
-#endif // _LIBTASK_REFCOUNT_H_
+#endif // _LIBTASK_UTIL_REFCOUNT_H_

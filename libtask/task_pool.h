@@ -20,9 +20,7 @@
 #ifndef _LIBTASK_TASK_POOL_H_
 #define _LIBTASK_TASK_POOL_H_
 
-#include <errno.h>
 #include <pthread.h>
-#include <stdint.h>
 
 #include "libtask/task.h"
 #include "libtask/util/condition.h"

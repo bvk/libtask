@@ -17,16 +17,15 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#ifndef _LIBTASK_SEMAPHORE_H_
-#define _LIBTASK_SEMAPHORE_H_
+#ifndef _LIBTASK_UTIL_SEMAPHORE_H_
+#define _LIBTASK_UTIL_SEMAPHORE_H_
 
-#include <assert.h>
 #include <pthread.h>
-#include <stdint.h>
 
 #include "libtask/task.h"
 #include "libtask/task_pool.h"
 #include "libtask/util/list.h"
+#include "libtask/util/log.h"
 #include "libtask/util/spinlock.h"
 
 typedef struct {
@@ -62,4 +61,4 @@ libtask_semaphore_up(libtask_semaphore_t *sem);
 void
 libtask_semaphore_down(libtask_semaphore_t *sem);
 
-#endif // _LIBTASK_SEMAPHORE_H_
+#endif // _LIBTASK_UTIL_SEMAPHORE_H_
