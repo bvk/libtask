@@ -47,6 +47,7 @@
 
 #include "libtask/libtask.h"
 #include "libtask/util/log.h"
+#include "libtask/util/test.h"
 
 #define TASK_STACK_SIZE (64*1024)
 
@@ -329,20 +330,6 @@ create_listening_socket(int backlog, int *fdp, uint16_t *portp)
     close(fd);
     return error;
   }
-}
-
-static bool
-strtoint32(const char *arg, int base, int32_t *valuep)
-{
-  char *endptr = NULL;
-  long int value = strtol(arg, &endptr, base);
-  if (((value == LONG_MIN || value == LONG_MAX) && errno == ERANGE) ||
-      (value < INT32_MIN || value > INT32_MAX) ||
-      (endptr[0] != '\0')) {
-    return false;
-  }
-  *valuep = (int32_t) value;
-  return true;
 }
 
 static error_t

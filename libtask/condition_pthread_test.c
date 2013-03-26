@@ -22,6 +22,7 @@
 
 #include "libtask/libtask.h"
 #include "libtask/util/log.h"
+#include "libtask/util/test.h"
 
 static int32_t num_threads = 10;
 
@@ -35,20 +36,6 @@ static struct argp_option options[] = {
   {"num-threads", 0, "N", 0, "Number of threads in the task-pool."},
   {0}
 };
-
-static bool
-strtoint32(const char *arg, int base, int32_t *valuep)
-{
-  char *endptr = NULL;
-  long int value = strtol(arg, &endptr, base);
-  if (((value == LONG_MIN || value == LONG_MAX) && errno == ERANGE) ||
-      (value < INT32_MIN || value > INT32_MAX) ||
-      (endptr[0] != '\0')) {
-    return false;
-  }
-  *valuep = (int32_t) value;
-  return true;
-}
 
 static error_t
 parse_options(int key, char *arg, struct argp_state *state)

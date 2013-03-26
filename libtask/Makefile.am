@@ -32,10 +32,10 @@ libtask_a_SOURCES += util/condition.c
 # Tests
 #
 
-TESTS = task_execute_test
-bin_PROGRAMS = task_execute_test
-task_execute_test_SOURCES = task_execute_test.c
-task_execute_test_LDADD = libtask.a
+TESTS = basic_test
+bin_PROGRAMS = basic_test
+basic_test_SOURCES = basic_test.c
+basic_test_LDADD = libtask.a
 
 TESTS += producer_consumer_semaphore_test
 bin_PROGRAMS += producer_consumer_semaphore_test

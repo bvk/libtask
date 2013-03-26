@@ -21,6 +21,7 @@
 
 #include "libtask/libtask.h"
 #include "libtask/util/log.h"
+#include "libtask/util/test.h"
 
 #define TASK_STACK_SIZE (64*1024)
 
@@ -100,20 +101,6 @@ consumer(void *arg_)
   static int32_t nfinished;
   DEBUG("consumer %d finished\n", libtask_atomic_add(&nfinished, 1));
   return 0;
-}
-
-static bool
-strtoint32(const char *arg, int base, int32_t *valuep)
-{
-  char *endptr = NULL;
-  long int value = strtol(arg, &endptr, base);
-  if (((value == LONG_MIN || value == LONG_MAX) && errno == ERANGE) ||
-      (value < INT32_MIN || value > INT32_MAX) ||
-      (endptr[0] != '\0')) {
-    return false;
-  }
-  *valuep = (int32_t) value;
-  return true;
 }
 
 static error_t

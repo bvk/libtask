@@ -197,10 +197,6 @@ libtask__task_main(libtask_task_t *task)
 error_t
 libtask__task_execute(libtask_task_t *task)
 {
-  if (task->complete) {
-    assert(0);
-    return EINVAL;
-  }
   assert(libtask_list_empty(&task->waiting_link));
 
   // Take a reference to the task and its owner so that they cannot be
