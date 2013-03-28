@@ -23,10 +23,10 @@
 #include <pthread.h>
 
 #include "libtask/task.h"
-#include "libtask/util/condition.h"
-#include "libtask/util/list.h"
-#include "libtask/util/refcount.h"
-#include "libtask/util/spinlock.h"
+#include "libtask/condition.h"
+#include "libtask/list.h"
+#include "libtask/refcount.h"
+#include "libtask/spinlock.h"
 
 // Task Pool
 //

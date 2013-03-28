@@ -25,8 +25,8 @@ AM_CFLAGS += -Wno-int-to-pointer-cast
 lib_LIBRARIES = libtask.a
 libtask_a_SOURCES  = task.c
 libtask_a_SOURCES += task_pool.c
-libtask_a_SOURCES += util/semaphore.c
-libtask_a_SOURCES += util/condition.c
+libtask_a_SOURCES += semaphore.c
+libtask_a_SOURCES += condition.c
 
 #
 # Tests

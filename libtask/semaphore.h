@@ -24,9 +24,9 @@
 
 #include "libtask/task.h"
 #include "libtask/task_pool.h"
-#include "libtask/util/list.h"
-#include "libtask/util/log.h"
-#include "libtask/util/spinlock.h"
+#include "libtask/list.h"
+#include "libtask/log.h"
+#include "libtask/spinlock.h"
 
 typedef struct {
   libtask_spinlock_t spinlock;

@@ -20,8 +20,8 @@
 #include <argp.h>
 
 #include "libtask/libtask.h"
-#include "libtask/util/log.h"
-#include "libtask/util/test.h"
+#include "libtask/log.h"
+#include "libtask/test.h"
 
 #define TASK_STACK_SIZE (64*1024)
 

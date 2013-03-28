@@ -17,7 +17,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include "libtask/util/semaphore.h"
+#include "libtask/semaphore.h"
 
 void
 libtask_semaphore_initialize(libtask_semaphore_t *sem, int32_t count)

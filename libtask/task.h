@@ -23,9 +23,9 @@
 #include <pthread.h>
 #include <ucontext.h>
 
-#include "libtask/util/condition.h"
-#include "libtask/util/list.h"
-#include "libtask/util/refcount.h"
+#include "libtask/condition.h"
+#include "libtask/list.h"
+#include "libtask/refcount.h"
 
 // Task
 //

@@ -18,7 +18,7 @@
 //
 
 #include "libtask/libtask.h"
-#include "libtask/util/log.h"
+#include "libtask/log.h"
 
 error_t
 libtask_task_pool_initialize(libtask_task_pool_t *pool)

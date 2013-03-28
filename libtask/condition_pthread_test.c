@@ -21,8 +21,8 @@
 #include <pthread.h>
 
 #include "libtask/libtask.h"
-#include "libtask/util/log.h"
-#include "libtask/util/test.h"
+#include "libtask/log.h"
+#include "libtask/test.h"
 
 static int32_t num_threads = 10;
 

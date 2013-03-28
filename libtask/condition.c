@@ -19,8 +19,8 @@
 
 #include "libtask/task.h"
 #include "libtask/task_pool.h"
-#include "libtask/util/condition.h"
-#include "libtask/util/log.h"
+#include "libtask/condition.h"
+#include "libtask/log.h"
 
 void
 libtask_condition_initialize(libtask_condition_t *cond,

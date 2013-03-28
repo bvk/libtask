@@ -26,9 +26,9 @@
 
 #include "libtask/task.h"
 #include "libtask/task_pool.h"
-#include "libtask/util/semaphore.h"
-#include "libtask/util/spinlock.h"
-#include "libtask/util/condition.h"
+#include "libtask/semaphore.h"
+#include "libtask/spinlock.h"
+#include "libtask/condition.h"
 
 // Schedule the current task and give up the thread.
 static inline error_t

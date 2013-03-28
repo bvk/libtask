@@ -22,8 +22,8 @@
 
 #include <pthread.h>
 
-#include "libtask/util/list.h"
-#include "libtask/util/spinlock.h"
+#include "libtask/list.h"
+#include "libtask/spinlock.h"
 
 // This condition variable implementation that works with
 // spinlocks. It can be used from task and normal thread contexts.

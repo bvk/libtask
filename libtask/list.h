@@ -20,7 +20,7 @@
 #ifndef _LIBTASK_UTIL_LIST_H_
 #define _LIBTASK_UTIL_LIST_H_
 
-#include "libtask/util/log.h"
+#include "libtask/log.h"
 
 // NOTE: These are similar to lists in Linux kernel, but are not the same!
 

@@ -18,7 +18,7 @@
 //
 
 #include "libtask/task_pool.h"
-#include "libtask/util/log.h"
+#include "libtask/log.h"
 
 // Pthread key that keeps track of current task.
 static pthread_key_t current_task_key;

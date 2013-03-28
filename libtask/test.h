@@ -1,7 +1,7 @@
 #ifndef _LIBTASK_UTIL_TEST_H_
 #define _LIBTASK_UTIL_TEST_H_
 
-#include "libtask/util/log.h"
+#include "libtask/log.h"
 
 static inline bool
 strtoint32(const char *arg, int base, int32_t *valuep)

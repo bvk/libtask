@@ -20,8 +20,8 @@
 #ifndef _LIBTASK_UTIL_SPINLOCK_H_
 #define _LIBTASK_UTIL_SPINLOCK_H_
 
-#include "libtask/util/atomic.h"
-#include "libtask/util/log.h"
+#include "libtask/atomic.h"
+#include "libtask/log.h"
 
 typedef struct {
   volatile int32_t value;

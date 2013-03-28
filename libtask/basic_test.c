@@ -20,8 +20,8 @@
 #include <argp.h>
 
 #include "libtask/libtask.h"
-#include "libtask/util/log.h"
-#include "libtask/util/test.h"
+#include "libtask/log.h"
+#include "libtask/test.h"
 
 #define NTHREADS 10
 #define NYIELD 10000
