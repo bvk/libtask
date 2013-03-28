@@ -17,24 +17,27 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#ifndef _LIBTASK_UTIL_LOG_H_
-#define _LIBTASK_UTIL_LOG_H_
+#ifndef _LIBTASK_LOG_H_
+#define _LIBTASK_LOG_H_
 
-#include <assert.h>
-#include <errno.h>
-#include <limits.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "libtask/base.h"
+#include "libtask/string_util.h"
 
 #ifndef CHECK
 #define CHECK(x) do { if (!(x)) { perror(""); assert(0); } } while (0)
 #endif
 
 #ifndef DEBUG
-#define DEBUG(fmt,...) do { /* printf */ (fmt, ##__VA_ARGS__); } while (0)
+#define DEBUG(fmt,...)				\
+  ({						\
+    extern bool libtask_option_debug;		\
+    if (libtask_option_debug) {			\
+      printf (fmt, ##__VA_ARGS__);		\
+    } else {					\
+      (fmt, ##__VA_ARGS__);			\
+    }						\
+    0;						\
+  })
 #endif
 
-#endif // _LIBTASK_UTIL_LOG_H_
+#endif // _LIBTASK_LOG_H_

@@ -17,8 +17,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#ifndef _LIBTASK_UTIL_SPINLOCK_H_
-#define _LIBTASK_UTIL_SPINLOCK_H_
+#ifndef _LIBTASK_SPINLOCK_H_
+#define _LIBTASK_SPINLOCK_H_
 
 #include "libtask/atomic.h"
 #include "libtask/log.h"
@@ -54,4 +54,4 @@ libtask_spinlock_status(libtask_spinlock_t *lock) {
   return libtask_atomic_load(&lock->value) == 1;
 }
 
-#endif // _LIBTASK_UTIL_SPINLOCK_H_
+#endif // _LIBTASK_SPINLOCK_H_

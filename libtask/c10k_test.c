@@ -47,7 +47,6 @@
 
 #include "libtask/libtask.h"
 #include "libtask/log.h"
-#include "libtask/test.h"
 
 #define TASK_STACK_SIZE (64*1024)
 
@@ -58,11 +57,11 @@ static int32_t num_messages = 100;
 static int32_t socket_accept_backlog = 10000;
 
 static struct argp_option options[] = {
-  {"num-io-threads",  0, "N", 0, "Number of threads in the io task-pool."},
-  {"num-cpu-threads", 1, "N", 0, "Number of threads in the cpu task-pool."},
-  {"num-clients",     2, "N", 0, "Number of clients for c10k challenge."},
-  {"num-messages",    3, "N", 0, "Number of messages per client."},
-  {"socket-accept-backlog", 4, "N", 0, "Size of socket accept backlog."},
+  {"num-io-threads",  0, "PINT32", 0, "No. of threads in the io task-pool."},
+  {"num-cpu-threads", 1, "PINT32", 0, "No. of threads in the cpu task-pool."},
+  {"num-clients",     2, "PINT32", 0, "No. of clients for c10k challenge."},
+  {"num-messages",    3, "PINT32", 0, "No. of messages per client."},
+  {"socket-accept-backlog", 4, "PINT32", 0, "Size of socket accept backlog."},
   {0}
 };
 
@@ -337,32 +336,31 @@ parse_options(int key, char *arg, struct argp_state *state)
 {
   switch(key) {
   case 0: // num-io-threads
-    if (!strtoint32(arg, 10, &num_io_threads) || num_io_threads <= 0) {
+    if (!str2pint32(arg, 10, &num_io_threads)) {
       argp_error(state, "Invalid value %s for --%s\n", arg, options[key].name);
     }
     break;
 
   case 1: // num-cpu-threads
-    if (!strtoint32(arg, 10, &num_cpu_threads) || num_cpu_threads <= 0) {
+    if (!str2pint32(arg, 10, &num_cpu_threads)) {
       argp_error(state, "Invalid value %s for --%s\n", arg, options[key].name);
     }
     break;
 
   case 2: // num-clients
-    if (!strtoint32(arg, 10, &num_clients) || num_clients <= 0) {
+    if (!str2pint32(arg, 10, &num_clients)) {
       argp_error(state, "Invalid value %s for --%s\n", arg, options[key].name);
     }
     break;
 
   case 3: // num-messages
-    if (!strtoint32(arg, 10, &num_messages) || num_messages <= 0) {
+    if (!str2pint32(arg, 10, &num_messages)) {
       argp_error(state, "Invalid value %s for --%s\n", arg, options[key].name);
     }
     break;
 
   case 4: // socket-accept-backlog
-    if (!strtoint32(arg, 10, &socket_accept_backlog) ||
-	socket_accept_backlog <= 0) {
+    if (!str2pint32(arg, 10, &socket_accept_backlog)) {
       argp_error(state, "Invalid value %s for --%s\n", arg, options[key].name);
     }
     break;
@@ -376,7 +374,11 @@ parse_options(int key, char *arg, struct argp_state *state)
 int
 main(int argc, char *argv[])
 {
-  struct argp argp = { options, parse_options };
+  struct argp_child children[2];
+  children[0] = libtask_argp_child;
+  children[1] = (struct argp_child){0};
+
+  struct argp argp = { options, parse_options, 0, 0, children };
   argp_parse(&argp, argc, argv, 0, 0, 0);
 
   epfd = epoll_create1(0);

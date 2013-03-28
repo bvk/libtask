@@ -20,6 +20,7 @@
 #ifndef _LIBTASK_LIBTASK_H_
 #define _LIBTASK_LIBTASK_H_
 
+#include <argp.h>
 #include <sys/syscall.h>
 #include <sys/time.h>
 #include <unistd.h>
@@ -29,6 +30,10 @@
 #include "libtask/semaphore.h"
 #include "libtask/spinlock.h"
 #include "libtask/condition.h"
+
+// Command line options for configuring the library.
+extern struct argp libtask_argp;
+extern struct argp_child libtask_argp_child;
 
 // Schedule the current task and give up the thread.
 static inline error_t

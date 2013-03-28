@@ -21,7 +21,6 @@
 
 #include "libtask/libtask.h"
 #include "libtask/log.h"
-#include "libtask/test.h"
 
 #define NTHREADS 10
 #define NYIELD 10000
@@ -34,11 +33,11 @@ static int32_t num_yields = 100;
 static int32_t num_switches = 100;
 
 static struct argp_option options[] = {
-  {"num-task-pools", 0, "N", 0, "Number of task-pools to create."},
-  {"num-tasks",      1, "N", 0, "Number of tasks to per task-pool."},
-  {"num-threads",    2, "N", 0, "Number of threads with each task-pool."},
-  {"num-yields",     3, "N", 0, "Number of yields to perform by the task."},
-  {"num-switches",   4, "N", 0, "Number of task-pool switches to perform."},
+  {"num-task-pools", 0, "PINT32", 0, "No. of task-pools to create."},
+  {"num-tasks",      1, "PINT32", 0, "No. of tasks to per task-pool."},
+  {"num-threads",    2, "PINT32", 0, "No. of threads with each task-pool."},
+  {"num-yields",     3, "UINT32", 0, "No. of yields to perform by the task."},
+  {"num-switches",   4, "UINT32", 0, "No. of task-pool switches to perform."},
   {0}
 };
 
@@ -69,33 +68,33 @@ work(void *arg_)
 static error_t
 parse_options(int key, char *arg, struct argp_state *state)
 {
-  switch(key) {
+  switch (key) {
   case 0: // num-task-pools
-    if (!strtoint32(arg, 10, &num_task_pools) || num_task_pools <= 0) {
+    if (!str2pint32(arg, 10, &num_task_pools)) {
       argp_error(state, "Invalid value %s for --%s\n", arg, options[key].name);
     }
     break;
 
   case 1: // num-tasks
-    if (!strtoint32(arg, 10, &num_tasks) || num_tasks <= 0) {
+    if (!str2pint32(arg, 10, &num_tasks)) {
       argp_error(state, "Invalid value %s for --%s\n", arg, options[key].name);
     }
     break;
 
   case 2: // num-threads
-    if (!strtoint32(arg, 10, &num_threads) || num_threads <= 0) {
+    if (!str2pint32(arg, 10, &num_threads)) {
       argp_error(state, "Invalid value %s for --%s\n", arg, options[key].name);
     }
     break;
 
   case 3: // num-yields
-    if (!strtoint32(arg, 10, &num_yields) || num_yields <= 0) {
+    if (!str2uint32(arg, 10, &num_yields)) {
       argp_error(state, "Invalid value %s for --%s\n", arg, options[key].name);
     }
     break;
 
   case 4: // num-switches
-    if (!strtoint32(arg, 10, &num_switches) || num_switches <= 0) {
+    if (!str2uint32(arg, 10, &num_switches)) {
       argp_error(state, "Invalid value %s for --%s\n", arg, options[key].name);
     }
     break;
@@ -109,7 +108,11 @@ parse_options(int key, char *arg, struct argp_state *state)
 int
 main(int argc, char *argv[])
 {
-  struct argp argp = { options, parse_options };
+  struct argp_child children[2];
+  children[0] = libtask_argp_child;
+  children[1] = (struct argp_child){0};
+
+  struct argp argp = { options, parse_options, 0, 0, children };
   argp_parse(&argp, argc, argv, 0, 0, 0);
 
   // Create task pools.

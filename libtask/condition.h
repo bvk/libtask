@@ -17,8 +17,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#ifndef _LIBTASK_UTIL_CONDITION_H_
-#define _LIBTASK_UTIL_CONDITION_H_
+#ifndef _LIBTASK_CONDITION_H_
+#define _LIBTASK_CONDITION_H_
 
 #include <pthread.h>
 
@@ -90,4 +90,4 @@ libtask_condition_signal(libtask_condition_t *cond);
 void
 libtask_condition_broadcast(libtask_condition_t *cond);
 
-#endif // _LIBTASK_UTIL_CONDITION_H_
+#endif // _LIBTASK_CONDITION_H_

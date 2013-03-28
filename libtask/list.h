@@ -17,8 +17,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#ifndef _LIBTASK_UTIL_LIST_H_
-#define _LIBTASK_UTIL_LIST_H_
+#ifndef _LIBTASK_LIST_H_
+#define _LIBTASK_LIST_H_
 
 #include "libtask/log.h"
 
@@ -241,4 +241,4 @@ libtask_list_print(libtask_list_t *head)
   } while ((it = it->next) != head);
 }
 
-#endif // _LIBTASK_UTIL_LIST_H_
+#endif // _LIBTASK_LIST_H_

@@ -17,24 +17,34 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#ifndef _LIBTASK_ATOMIC_H_
-#define _LIBTASK_ATOMIC_H_
+#include <argp.h>
 
-// Macros for atomic operations.
+#include "libtask/options.h"
+#include "libtask/string_util.h"
 
-#define libtask_atomic_load(x) __atomic_load_n((x), __ATOMIC_SEQ_CST)
-#define libtask_atomic_store(x,n) __atomic_store_n((x), (n), __ATOMIC_SEQ_CST)
-#define libtask_atomic_add(x,n) __atomic_add_fetch((x), (n), __ATOMIC_SEQ_CST)
-#define libtask_atomic_sub(x,n) __atomic_sub_fetch((x), (n), __ATOMIC_SEQ_CST)
+bool libtask_option_debug = false;
 
-#define libtask_atomic_cmpxchg(p,o,n)					\
-  ({									\
-    __typeof ((o)) tmp = (o);						\
-    __atomic_compare_exchange_n((p), &tmp, (n),				\
-				true /* strong */,			\
-				__ATOMIC_SEQ_CST,			\
-				__ATOMIC_SEQ_CST);			\
-    tmp;								\
-  })
+static struct argp_option options[] = {
+  {"libtask-debug", 0, "BOOL", 0, "Print debug messages."},
+  {0}
+};
 
-#endif // _LIBTASK_ATOMIC_H_
+static error_t
+libtask_options_parse(int key, char *arg, struct argp_state *state)
+{
+  switch (key) {
+  case 0: // libtask-debug
+    if (!str2bool(arg, &libtask_option_debug)) {
+      argp_error(state, "invalid value %s for --%s\n", arg, options[key].name);
+    }
+    break;
+
+  default:
+    return ARGP_ERR_UNKNOWN;
+  }
+  return 0;
+}
+
+// Expose libtask parser to the client.
+struct argp libtask_argp = { options, libtask_options_parse };
+struct argp_child libtask_argp_child = { &libtask_argp, 0, "libtask", 0 };

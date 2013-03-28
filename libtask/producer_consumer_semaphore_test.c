@@ -21,7 +21,6 @@
 
 #include "libtask/libtask.h"
 #include "libtask/log.h"
-#include "libtask/test.h"
 
 #define TASK_STACK_SIZE (64*1024)
 
@@ -32,11 +31,11 @@ static int32_t num_consumers = 30;
 static int32_t max_buffer_size = 5;
 
 static struct argp_option options[] = {
-  {"num-threads",   0, "N", 0, "Number of threads to use with the task-pool."},
-  {"num-items",     1, "N", 0, "Number of items to produce and consume."},
-  {"num-producers", 2, "N", 0, "Number of producers."},
-  {"num-consumers", 3, "N", 0, "Number of consumers."},
-  {"max-buffer-size", 4, "N", 0, "Maximum no. of items queued in the buffer."},
+  {"num-threads",   0, "PINT32", 0, "No. of threads in the task-pool."},
+  {"num-items",     1, "PINT32", 0, "No. of items to produce and consume."},
+  {"num-producers", 2, "PINT32", 0, "No. of producers."},
+  {"num-consumers", 3, "PINT32", 0, "No. of consumers."},
+  {"max-buffer-size", 4, "PINT32", 0, "Size of the bounded buffer."},
   {0}
 };
 
@@ -108,31 +107,31 @@ parse_options(int key, char *arg, struct argp_state *state)
 {
   switch(key) {
   case 0: // num-threads
-    if (!strtoint32(arg, 10, &num_threads) || num_threads <= 0) {
+    if (!str2pint32(arg, 10, &num_threads)) {
       argp_error(state, "Invalid value %s for --%s\n", arg, options[key].name);
     }
     break;
 
   case 1: // num-items
-    if (!strtoint32(arg, 10, &num_items) || num_items <= 0) {
+    if (!str2pint32(arg, 10, &num_items)) {
       argp_error(state, "Invalid value %s for --%s\n", arg, options[key].name);
     }
     break;
 
   case 2: // num-producers
-    if (!strtoint32(arg, 10, &num_producers) || num_producers <= 0) {
+    if (!str2pint32(arg, 10, &num_producers)) {
       argp_error(state, "Invalid value %s for --%s\n", arg, options[key].name);
     }
     break;
 
   case 3: // num-consumers
-    if (!strtoint32(arg, 10, &num_consumers) || num_consumers <= 0) {
+    if (!str2pint32(arg, 10, &num_consumers)) {
       argp_error(state, "Invalid value %s for --%s\n", arg, options[key].name);
     }
     break;
 
   case 4: // max-buffer-size
-    if (!strtoint32(arg, 10, &max_buffer_size) || max_buffer_size <= 0) {
+    if (!str2pint32(arg, 10, &max_buffer_size)) {
       argp_error(state, "Invalid value %s for --%s\n", arg, options[key].name);
     }
     break;
@@ -146,7 +145,11 @@ parse_options(int key, char *arg, struct argp_state *state)
 int
 main(int argc, char *argv[])
 {
-  struct argp argp = { options, parse_options };
+  struct argp_child children[2];
+  children[0] = libtask_argp_child;
+  children[1] = (struct argp_child){0};
+
+  struct argp argp = { options, parse_options, 0, 0, children };
   argp_parse(&argp, argc, argv, 0, 0, 0);
 
   CHECK(buffer = malloc(sizeof (int32_t) * max_buffer_size));

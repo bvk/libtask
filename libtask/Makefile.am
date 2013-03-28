@@ -27,6 +27,7 @@ libtask_a_SOURCES  = task.c
 libtask_a_SOURCES += task_pool.c
 libtask_a_SOURCES += semaphore.c
 libtask_a_SOURCES += condition.c
+libtask_a_SOURCES += options.c
 
 #
 # Tests
